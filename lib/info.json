@@ -1,0 +1,78 @@
+{
+    "title": "",
+    "meta_info": "",
+    "VIS": {
+        "bib_view": {
+            "major": "issue",
+            "minor": "journal",
+            "dir": "up"
+        },
+        "prefab_plots": false,
+        "model_view": {
+            "w": 500,
+            "aspect": 2,
+            "words": 8,
+            "size_range": [
+                6,
+                14
+            ],
+            "yearly": {
+                "w": 500,
+                "label_threshold": 30
+            },
+            "name_size": 13
+        },
+        "word_view": {
+            "row_height": 100,
+            "w": 700,
+            "topic_label_leading": 16,
+            "m": {
+                "left": 150,
+                "right": 50,
+                "top": 50,
+                "bottom": 0
+            }
+        },
+        "bib": {
+            "author_delimiter": ", "
+        },
+        "special_issue_class": "special_issue_nohighlight",
+        "hidden_topics": [
+            8,
+            44,
+            49
+        ],
+        "show_hidden_topics": false
+    },
+    "issues": [
+
+    ],
+    "names": {
+        "1": "Topic 001",
+        "2": "Topic 002",
+        "3": "Topic 003",
+        "4": "Topic 004",
+        "5": "Topic 005",
+        "6": "Topic 006",
+        "7": "Topic 007",
+        "8": "Topic 008",
+        "9": "Topic 009",
+        "10": "Topic 010",
+        "11": "Topic 011",
+        "12": "Topic 012",
+        "13": "Topic 013",
+        "14": "Topic 014",
+        "15": "Topic 015",
+        "16": "Topic 016",
+        "17": "Topic 017",
+        "18": "Topic 018",
+        "19": "Topic 019",
+        "20": "Topic 020",
+        "21": "Topic 021",
+        "22": "Topic 022",
+        "23": "Topic 023",
+        "24": "Topic 024",
+        "25": "Topic 025"
+    }
+}
+
