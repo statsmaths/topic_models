@@ -2,9 +2,11 @@
 library(mallet)
 library(jsonlite)
 library(Matrix)
-library(coreNLP)
+library(cleanNLP)
 library(rJava)
-
+library(readr)
+library(magrittr)
+library(dplyr)
 
 build_webpage <- function(name, mallet_obj, links, titles) {
 
@@ -174,5 +176,107 @@ learn_clust_topics <- function(basedir, max_depth, pos_list = "NOUN",
   list(docs = docs, words = words, vocab = vocab)
 }
 
+make_doc <- function(file) {
+  # read all of the annotations into R
+  z <- read_rds(file)
+
+  # extract features
+  dtable <- get_document(z) %>%
+    filter(!duplicated(title))
+
+  df <- get_token(z) %>%
+    group_by(id) %>%
+    mutate(len = n()) %>%
+    filter(len > 5000) %>%
+    inner_join(dtable) %>%
+    filter(pos %in% c("NNS", "NN")) %>%
+    filter(nchar(lemma) > 3)
+
+  mat <- df  %>%
+    get_tfidf(min_df = 0.03, max_df = 0.95, type = "tf", tf_weight = "raw")
+
+  vocab <- mat$vocab
+  doc_ids <- unique(df$id)
+  doc <- rep("", length(doc_ids))
+  for (i in 1:length(doc_ids)) {
+    doc[i] <- paste(unlist(mapply(rep, vocab, each = mat$tf[i,]), use.names = FALSE), collapse = " ")
+    print(i)
+  }
+
+  list(doc = doc, df = df, vocab = vocab, tf = mat$tf)
+}
 
 
+learn_topics_clean <- function(doc, names, ntopics) {
+
+  # initalize java
+  mem <- "4g"
+  options(java.parameters = paste0("-Xmx", mem))
+  rJava::.jinit()
+
+  # run mallet
+  tf <- tempfile()
+  writeLines(c(letters, LETTERS), tf)
+  inst <- mallet.import(names, doc, tf)
+  mallet_obj <- MalletLDA(num.topics = as.double(ntopics))
+  mallet_obj$loadDocuments(inst)
+  mallet_obj$train(200)
+  mallet_obj$maximize(10)
+  gc()
+
+  mallet_obj
+}
+
+learn_clust_topics_clean <- function(tf, vocab, max_depth) {
+
+  # calculate Laplacian matrix
+  tf_raw <- tf
+  df_raw <- as.numeric(apply(tf_raw != 0, 2, sum))
+
+  tf <- log(1 + tf_raw)
+  idf <- log(nrow(tf_raw) / df_raw)
+  tfidf <- t(t(tf) * idf)
+  tfidf <- scale(tfidf, center=FALSE)
+  A <- tcrossprod(tfidf) / ncol(tfidf)
+  diag(A) <- 0
+  Dinvroot <- diag(1 / sqrt(apply(A, 1, sum)))
+
+  L <- diag(nrow(A)) - Dinvroot %*% A %*% Dinvroot
+
+  # now, cycle over the second eigenvalues
+  groups <- rep(0, nrow(L))
+  for (depth in 1:max_depth) {
+
+    new_groups <- groups
+    second_vals <- rep(0, length(groups))
+
+    for (g in unique(groups)) {
+
+      index <- which(groups == g)
+      e <- eigen(L[index,index])
+      vals <- e$vector[,ncol(e$vector)-1]
+      m <- 0 #median(vals)
+
+      new_groups[index][vals > m]  <- g * 10 + 1
+      new_groups[index][vals <= m] <- g * 10
+
+      second_vals[index] <- vals
+
+      #cat(sprintf("group: %014s  depth: %02d\n", g, depth))
+    }
+    groups <- new_groups
+  }
+
+  ntopics <- length(unique(groups))
+  docs <- matrix(0, nrow=nrow(L), ncol=ntopics)
+  for (i in 1:length(unique(groups))) {
+    docs[groups == unique(groups)[i],i] <- 1
+  }
+
+  words <- apply(tfidf, 2, function(v) tapply(v, groups, sum))
+  words <- round(words)
+  rownames(words) <- NULL
+  colnames(words) <- NULL
+
+  list(docs = docs, words = words, vocab = vocab)
+}
