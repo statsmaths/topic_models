@@ -12,7 +12,7 @@ links <- rep("#", length(mdata))
 
 filter_list <- c(LETTERS, letters, "^", "_", "\\", "paper", "part", "project", "study", "who",
   "history", "historian", "presentation", "way", "what")
-mallet_obj <- learn_topics("~/Desktop/oah/anno", 10, seed = 7,
+mallet_obj <- learn_topics("~/Desktop/oah/anno", 12, seed = 7,
                             filter_list = filter_list)
 
 
