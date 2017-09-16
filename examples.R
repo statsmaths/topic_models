@@ -1,17 +1,42 @@
 library(coreNLP)
 library(mallet)
 library(rJava)
+library(readr)
 
 source("scripts.R")
+
+#######################################################################
+# oah, paper abstracts
+mdata <- read_csv("~/Desktop/oah/metadata.csv")
+links <- rep("#", length(mdata))
+
+filter_list <- c(LETTERS, letters, "^", "_", "\\", "paper", "part", "project", "study", "who",
+  "history", "historian", "presentation", "way", "what")
+mallet_obj <- learn_topics("~/Desktop/oah/anno", 10, seed = 7,
+                            filter_list = filter_list)
+
+
+
+build_webpage("oah12", mallet_obj, links, mdata$titles)
+
+
+build_webpage("oah12", mallet_obj, links, mdata$titles,
+              topic_nums = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+                12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24))
+
+
+c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+18, 19, 20, 21, 22, 23, 24)
+
 
 
 #######################################################################
 # arXiv.org, statistics articles from 2016-01-01 to 2016-06-01
-mdata <- read.csv("~/files/dataProc/arxiv/metadata.csv", as.is=TRUE, quote="", sep="|")
+mdata <- read.csv("~/Desktop/arxiv_abstracts/metadata.csv", as.is=TRUE, quote="", sep="|")
 mdata <- mdata[-1935,]
 links <- sprintf("https://arxiv.org/abs/%s", mdata$id)
 
-mallet_obj <- learn_topics("~/files/dataProc/arxiv/anno", 30L)
+mallet_obj <- learn_topics("~/Desktop/arxiv_abstracts/anno", 30L)
 build_webpage("arxiv30", mallet_obj, links, mdata$title)
 
 mallet_obj <- learn_clust_topics("~/files/dataProc/arxiv/anno", max_depth=5)
@@ -19,7 +44,7 @@ build_webpage("arxiv32", mallet_obj, links, mdata$title)
 
 
 #######################################################################
-# Stanford encyclopedia of philosophy
+# Stanford encyclopaedia of philosophy
 fin <- gsub("\\.Rds", "", dir("~/files/dataProc/sep/anno"))
 title <- readRDS("~/files/dataProc/sep/titles.Rds")
 links <- sprintf("http://plato.stanford.edu/entries/%s", fin)

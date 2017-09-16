@@ -8,7 +8,8 @@ library(readr)
 library(magrittr)
 library(dplyr)
 
-build_webpage <- function(name, mallet_obj, links, titles) {
+build_webpage <- function(name, mallet_obj, links, titles,
+                          topic_nums = NULL) {
 
   if (inherits(mallet_obj, "jobjRef")) {
     # pull out objects from the mallet_obj
@@ -20,6 +21,29 @@ build_webpage <- function(name, mallet_obj, links, titles) {
     words <- mallet_obj$words
     vocab <- mallet_obj$vocab
   }
+
+  # subset topics because Lauren is a pain!
+  if (!is.null(topic_nums)) {
+    docs <- docs[,topic_nums]
+    words <- words[topic_nums,]
+
+    # remove words that no longer appear in any topics
+    remove_these <- which(apply(words, 2, sum) == 0)
+    if (length(remove_these)) {
+      words <- words[,-remove_these]
+      vocab <- vocab[-remove_these]
+    }
+  }
+
+  # topic 8 does not show up; no idea why; create a place
+  # holder by copying topic 1:
+  # if (ncol(docs) > 7) {
+  #   id <- seq_len(ncol(docs))
+  #   id <- c(id[1:7], 1, id[8:nrow(docs)])
+
+  #   docs <- docs[,id]
+  #   words <- words[id,]
+  # }
 
   outDir <- sprintf("models/%s/data", name)
   dir.create("models", FALSE, TRUE)
@@ -66,7 +90,7 @@ build_webpage <- function(name, mallet_obj, links, titles) {
 }
 
 
-learn_topics <- function(basedir, ntopics, pos_list = "NOUN",
+learn_topics <- function(basedir, ntopics, pos_list = "NOUN", seed = 1L,
     filter_list = c(LETTERS, letters, "^", "_", "\\", "p_0", "a_i", "x_i", "y_i", "x_1", "y_1", "|", "datum", "â", "Â")) {
 
   # initalize java
@@ -80,8 +104,8 @@ learn_topics <- function(basedir, ntopics, pos_list = "NOUN",
 
   # extract features
   text <- sapply(z, function(this) {
-    tok <- getToken(this)
-    these <- tok$lemma[universalTagset(tok$POS) %in% pos_list]
+    tok <- get_token(this)
+    these <- tok$lemma[tok$upos %in% pos_list]
     these <- setdiff(these, filter_list)
     index <- grep("mathequation", these, ignore.case=TRUE)
     if (length(index)) these <- these[-index]
@@ -93,6 +117,7 @@ learn_topics <- function(basedir, ntopics, pos_list = "NOUN",
   writeLines(c("be", "go", "have", letters, LETTERS), tf)
   inst <- mallet.import(basename(fin), text, tf)
   mallet_obj <- MalletLDA(num.topics = as.double(ntopics))
+  mallet_obj$model$setRandomSeed(as.integer(seed))
   mallet_obj$loadDocuments(inst)
   mallet_obj$train(200)
   mallet_obj$maximize(10)
@@ -110,8 +135,8 @@ learn_clust_topics <- function(basedir, max_depth, pos_list = "NOUN",
 
   # extract features
   text <- lapply(z, function(this) {
-    tok <- getToken(this)
-    these <- tok$lemma[universalTagset(tok$POS) %in% pos_list]
+    tok <- get_token(this)
+    these <- tok$lemma[tok$upos %in% pos_list]
     these <- setdiff(these, filter_list)
     index <- grep("mathequation", these, ignore.case=TRUE)
     if (length(index)) these <- these[-index]
