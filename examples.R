@@ -7,7 +7,7 @@ source("scripts.R")
 
 #######################################################################
 # oah, paper abstracts
-mdata <- read_csv("~/Desktop/oah/metadata.csv")
+mdata <- read_csv("~/gd_old/oah/metadata.csv")
 links <- rep("#", length(mdata))
 
 filter_list <- c(LETTERS, letters, "^", "_", "\\", "paper", "part", "project", "study", "who",
@@ -20,13 +20,7 @@ mallet_obj <- learn_topics("~/Desktop/oah/anno", 12, seed = 7,
 build_webpage("oah12", mallet_obj, links, mdata$titles)
 
 
-build_webpage("oah12", mallet_obj, links, mdata$titles,
-              topic_nums = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-                12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24))
-
-
-c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-18, 19, 20, 21, 22, 23, 24)
+build_webpage("oah12", mallet_obj, links, mdata$titles)
 
 
 

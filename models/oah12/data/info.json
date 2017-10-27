@@ -38,9 +38,7 @@
         },
         "special_issue_class": "special_issue_nohighlight",
         "hidden_topics": [
-            8,
-            44,
-            49
+
         ],
         "show_hidden_topics": false
     },
@@ -59,7 +57,9 @@
         "9": "Topic 009",
         "10": "Topic 010",
         "11": "Topic 011",
-        "12": "Topic 012"
+        "12": "Topic 012",
+        "13": "Topic 013",
+        "14": "Topic 014"
     }
 }
 
