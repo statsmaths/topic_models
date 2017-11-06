@@ -29,6 +29,8 @@ paper <- xlsx::read.xlsx("~/gd/oah/2018 AM Paper Data _10.11.2017.xlsx",
                          sheetIndex = 1, stringsAsFactors = FALSE)
 paper <- paper[nchar(as.character(paper$Paper.Abstract)) > 100,]
 paper <- paper[!is.na(nchar(as.character(paper$Paper.Abstract))),]
+paper <- paper[!duplicated(paper$Paper.Abstract),]
+paper <- paper[!duplicated(paper$Paper.Title),]
 
 init_spaCy("en")
 
@@ -36,10 +38,20 @@ title <- as.character(paper$Paper.Title)
 title <- stri_replace_all(title, "", fixed = "\t")
 title <- stri_replace_all(title, "", fixed = "\r")
 title <- stri_replace_all(title, "", fixed = "\n")
+title <- stri_replace_all(title, "", fixed = "‘")
+title <- stri_replace_all(title, "", fixed = "’")
 title <- stri_replace_all(title, "", fixed = "“")
 title <- stri_replace_all(title, "", fixed = "”")
 title <- stri_replace_all(title, "", fixed = "\"")
 title <- stri_trans_totitle(title)
+title <- stri_replace_all(title, "II", fixed = "Ii")
+title <- stri_replace_all(title, "U.S.", fixed = "U.s.")
+title <- stri_replace_all(title, "CA", fixed = "Ca ")
+title <- stri_replace_all(title, "A.E.F.", fixed = "A.e.f.")
+title <- stri_replace_all(title, "WW", fixed = "Ww")
+title <- stri_replace_all(title, "WWII", fixed = "WWii")
+title <- stri_replace_all(title, "20th C.", fixed = "20Th C.")
+title <- stri_replace_all(title, "0s", fixed = "0S")
 
 text <- paper$Paper.Abstract
 text <- stri_replace_all(text, "", fixed = "\t")
@@ -47,6 +59,12 @@ text <- stri_replace_all(text, "", fixed = "\r")
 text <- stri_replace_all(text, "", fixed = "\n")
 text <- stri_replace_all(text, "", fixed = "“")
 text <- stri_replace_all(text, "", fixed = "”")
+text <- stri_replace_all(text, "", fixed = "‘")
+text <- stri_replace_all(text, "", fixed = "’")
+text <- stri_replace_all(text, "&quot;", fixed = "\"")
+text <- stri_replace_all(text, "&quot;", fixed = "\'")
+
+
 
 paper$Participant.TItle[is.na(paper$Participant.TItle)] <- ""
 paper$Participant.First.Name[is.na(paper$Participant.First.Name)] <- ""
@@ -71,8 +89,8 @@ author[stri_length(author) < 10] <- ""
 time <- sprintf("%s to %s", stri_sub(as.character(paper$Start.Time), 12, 16),
                             stri_sub(as.character(paper$End.Time), 12, 16))
 
-desc <- sprintf("<h5><i>%s</i></h5><p><h5><b>Date:</b> %s</h5><p><h5><b>Time:</b> %s</h5><p><h5><b>Id:</b> %s</h5><p>%s",
-                author, paper$Date, time, as.character(paper$Proposal.ID), text)
+desc <- sprintf("<h5><i>%s</i></h5><p><h5><b>Date:</b> %s</h5><p><h5><b>Time:</b> %s</h5><p><h5><b>Location:</b> <a href=\'http://www.oah.org/meetings-events/2018/sessions/\' style=\'color:#6CADC7\'>OAH Schedule</a></h5><p>%s",
+                author, paper$Date, time, text)
 
 anno <- run_annotators(text, as_strings = TRUE)
 
@@ -84,7 +102,7 @@ toks <- split(toks, toks$id)
 toks <- lapply(toks, getElement, "lemma")
 toks <- as.character(unlist(lapply(toks, paste, collapse = " ")))
 
-mallet_obj <- learn_topics_oah(toks, ntopics = 12, seed = 7)
+mallet_obj <- learn_topics_oah(toks, ntopics = 14, seed = 7)
 
 build_webpage("oah12", mallet_obj, desc, title)
 
