@@ -21,20 +21,80 @@ filter_list <- c(LETTERS, letters, "^", "_", "\\", "paper", "part",
                  stop_words$word)
 filter_list <- data_frame(lemma = filter_list)
 
+# PREPARE PROPOSAL DATA
 prop <- xlsx::read.xlsx("~/gd/oah/2018 AM Proposal Data_10.11.2017.xlsx",
                         sheetIndex = 1, , stringsAsFactors = FALSE)
 prop <- prop[nchar(as.character(prop$Proposal.Abstract)) > 100,]
 prop <- prop[!is.na(nchar(as.character(prop$Proposal.Abstract))),]
+prop <- prop[!duplicated(prop$Proposal.Abstract),]
+prop <- prop[!duplicated(prop$Proposal.Title),]
+prop$Participant.Title[is.na(prop$Participant.Title)] <- ""
+prop$Participant.First.Name[is.na(prop$Participant.First.Name)] <- ""
+prop$Participant.Middle.Name[is.na(prop$Participant.Middle.Name)] <- ""
+prop$Participant.Last.Name[is.na(prop$Participant.Last.Name)] <- ""
+prop$Participant.Suffix[is.na(prop$Participant.Suffix)] <- ""
+prop$Participant.Affiliation[is.na(prop$Participant.Affiliation)] <- ""
+prop$author <- sprintf("%s %s %s %s (%s %s)", prop$Participant.Title,
+                                       prop$Participant.First.Name,
+                                       prop$Participant.Middle.Name,
+                                       prop$Participant.Last.Name,
+                                       prop$Participant.Suffix,
+                                       prop$Participant.Affiliation)
+prop$author <- stri_replace_all(prop$author, " ", regex = "[ ]+")
+prop$author <- stri_replace_all(prop$author, "", regex = "$ ")
+prop$author <- stri_replace_all(prop$author, "", regex = " ^")
+prop$author <- stri_replace_all(prop$author, "(", fixed = "( ")
+prop$author <- stri_replace_all(prop$author, ")", fixed = " )")
+prop$author <- stri_replace_all(prop$author, "", fixed = "\"")
+prop$author[stri_length(prop$author) < 10] <- ""
+prop$time <- sprintf("%s to %s", stri_sub(as.character(prop$Start.Time), 12, 16),
+                                 stri_sub(as.character(prop$End.Time), 12, 16))
+
+# PREPARE PAPER DATA
 paper <- xlsx::read.xlsx("~/gd/oah/2018 AM Paper Data _10.11.2017.xlsx",
                          sheetIndex = 1, stringsAsFactors = FALSE)
 paper <- paper[nchar(as.character(paper$Paper.Abstract)) > 100,]
 paper <- paper[!is.na(nchar(as.character(paper$Paper.Abstract))),]
 paper <- paper[!duplicated(paper$Paper.Abstract),]
 paper <- paper[!duplicated(paper$Paper.Title),]
+paper$Participant.TItle[is.na(paper$Participant.TItle)] <- ""
+paper$Participant.First.Name[is.na(paper$Participant.First.Name)] <- ""
+paper$Participant.Middle.Name[is.na(paper$Participant.Middle.Name)] <- ""
+paper$Participant.Last.Name[is.na(paper$Participant.Last.Name)] <- ""
+paper$Participant.Suffix[is.na(paper$Participant.Suffix)] <- ""
+paper$Participant.Affiliation[is.na(paper$Participant.Affiliation)] <- ""
+paper$author <- sprintf("%s %s %s %s (%s %s)", paper$Participant.TItle,
+                                       paper$Participant.First.Name,
+                                       paper$Participant.Middle.Name,
+                                       paper$Participant.Last.Name,
+                                       paper$Participant.Suffix,
+                                       paper$Participant.Affiliation)
+paper$author <- stri_replace_all(paper$author, " ", regex = "[ ]+")
+paper$author <- stri_replace_all(paper$author, "", regex = "$ ")
+paper$author <- stri_replace_all(paper$author, "", regex = " ^")
+paper$author <- stri_replace_all(paper$author, "(", fixed = "( ")
+paper$author <- stri_replace_all(paper$author, ")", fixed = " )")
+paper$author <- stri_replace_all(paper$author, "", fixed = "\"")
+paper$author[stri_length(paper$author) < 10] <- ""
+paper$time <- sprintf("%s to %s", stri_sub(as.character(paper$Start.Time), 12, 16),
+                                  stri_sub(as.character(paper$End.Time), 12, 16))
 
-init_spaCy("en")
+data <- bind_rows(
+          data_frame(title = paper$Paper.Title,
+                     author = paper$author,
+                     time = paper$time,
+                     text = paper$Paper.Abstract,
+                     date = paper$Date,
+                     type = "Paper"),
+          data_frame(title = prop$Proposal.Title,
+                     author = prop$author,
+                     time = prop$time,
+                     text = prop$Proposal.Abstract,
+                     date = prop$Date,
+                     type = prop$Proposal.Type)
+        )
 
-title <- as.character(paper$Paper.Title)
+title <- as.character(data$title)
 title <- stri_replace_all(title, "", fixed = "\t")
 title <- stri_replace_all(title, "", fixed = "\r")
 title <- stri_replace_all(title, "", fixed = "\n")
@@ -52,8 +112,14 @@ title <- stri_replace_all(title, "WW", fixed = "Ww")
 title <- stri_replace_all(title, "WWII", fixed = "WWii")
 title <- stri_replace_all(title, "20th C.", fixed = "20Th C.")
 title <- stri_replace_all(title, "0s", fixed = "0S")
+title <- stri_replace_all(title, "CSU ", fixed = "CSU ")
+title <- stri_replace_all(title, " VJ ", fixed = " Vj ")
+title <- stri_replace_all(title, "20th", fixed = "20Th")
+data$title <- title
 
-text <- paper$Paper.Abstract
+
+
+text <- as.character(data$text)
 text <- stri_replace_all(text, "", fixed = "\t")
 text <- stri_replace_all(text, "", fixed = "\r")
 text <- stri_replace_all(text, "", fixed = "\n")
@@ -63,34 +129,15 @@ text <- stri_replace_all(text, "", fixed = "‘")
 text <- stri_replace_all(text, "", fixed = "’")
 text <- stri_replace_all(text, "&quot;", fixed = "\"")
 text <- stri_replace_all(text, "&quot;", fixed = "\'")
+data$text <- text
 
 
+data$desc <- sprintf("<h5><i>%s</i></h5><p><h5><b>Date:</b> %s</h5></p><p><h5><b>Time:</b> %s</h5></p><p><h5><b>Location:</b> <a href=\'http://www.oah.org/meetings-events/2018/sessions/\' style=\'color:#6CADC7\'>OAH Schedule</a></h5></p><p><h5><b>Type:</b> %s</h5></p><p>%s</p>",
+                    data$author, data$date, data$time, data$type, data$text)
 
-paper$Participant.TItle[is.na(paper$Participant.TItle)] <- ""
-paper$Participant.First.Name[is.na(paper$Participant.First.Name)] <- ""
-paper$Participant.Middle.Name[is.na(paper$Participant.Middle.Name)] <- ""
-paper$Participant.Last.Name[is.na(paper$Participant.Last.Name)] <- ""
-paper$Participant.Suffix[is.na(paper$Participant.Suffix)] <- ""
-paper$Participant.Affiliation[is.na(paper$Participant.Affiliation)] <- ""
 
-author <- sprintf("%s %s %s %s (%s %s)", paper$Participant.TItle,
-                                       paper$Participant.First.Name,
-                                       paper$Participant.Middle.Name,
-                                       paper$Participant.Last.Name,
-                                       paper$Participant.Suffix,
-                                       paper$Participant.Affiliation)
-author <- stri_replace_all(author, " ", regex = "[ ]+")
-author <- stri_replace_all(author, "", regex = "$ ")
-author <- stri_replace_all(author, "", regex = " ^")
-author <- stri_replace_all(author, "(", fixed = "( ")
-author <- stri_replace_all(author, ")", fixed = " )")
-author[stri_length(author) < 10] <- ""
-
-time <- sprintf("%s to %s", stri_sub(as.character(paper$Start.Time), 12, 16),
-                            stri_sub(as.character(paper$End.Time), 12, 16))
-
-desc <- sprintf("<h5><i>%s</i></h5><p><h5><b>Date:</b> %s</h5><p><h5><b>Time:</b> %s</h5><p><h5><b>Location:</b> <a href=\'http://www.oah.org/meetings-events/2018/sessions/\' style=\'color:#6CADC7\'>OAH Schedule</a></h5><p>%s",
-                author, paper$Date, time, text)
+# PARSE WITH SPACY
+init_spaCy("en")
 
 anno <- run_annotators(text, as_strings = TRUE)
 
@@ -104,7 +151,8 @@ toks <- as.character(unlist(lapply(toks, paste, collapse = " ")))
 
 mallet_obj <- learn_topics_oah(toks, ntopics = 14, seed = 7)
 
-build_webpage("oah12", mallet_obj, desc, title)
+# BUILD WEBSITE
+build_webpage("oah12", mallet_obj, data$desc, data$title)
 
 
 
