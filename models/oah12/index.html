@@ -14,7 +14,6 @@
   <title>Topic Model</title>
   <script type="text/javascript" src="../../lib/d3.min.js"></script>
 
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="../../css/bootstrap.min.css" media="screen">
 
@@ -23,50 +22,55 @@
 
 <body>
 
+
+<div class="modal fade" id="getting_started_modal" tabindex="-1"
+    role="dialog" aria-labelledby="getting_started_title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="getting_started_title">OAH Theme Visualizer</h4>
+      </div>
+      <div class="modal-body">
+        <p>This website allows participants to explore related events across conference formats by theme.  Using a computational method called topic modeling, which identifies latent themes in a textual corpus, each event is assigned to a topic. Each topic is a list of words that tend to co-occur in the same documents. These topics can be understood as themes or discourses. Select a theme and see the related events. Select the event and see corresponding information such as speaker, date, and time.</p>
+        <ul>
+        <p><b>Topic Grid:</b> Visualizes fourteen themes that are prevelant throughout the conference. The first seven associated words are provided.  Click on the theme to see related events.</p>
+        <li><b>Topic List:</b> Lists the same twelve topics avaiable in the grid. For each theme, the most prevelant words are listed.  The bar graph and percentage on the far right give the proporation of the events that are assigned to the theme.</li>
+        <li><b>Word index:</b> List of words that are prominent in the twelve topics. </li>
+        </ul>
+        <p>Within each theme, there is a list of the top 20 events alongside the percentage with which that event corresponds with the theme. The top words lists the words that define the theme. Click on the event to see more details including the data, time, location, event type and abstract. </p>
+        <p>The OAH Theme Visualizer is built by Lauren Tilton and Taylor Arnold using the Signs@40 interface developed by Andrew Goldstone, Susana Galán, C. Laura Lovin, Andrew Mazzaschi, and Lindsey Whitmore. For the OAH code, visit here. For the Signs@40 code, <a href="https://github.com/signs40th/topic-model">visit here</a>.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default pull-right"
+            data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="main_container" class="container-fluid">
 <div class="row">
 
 <div id="dfb_nav" class="col-md-2 col-sm-2 col-xs-12">
   <div id="dfb_nav_collapse">
-    <h3>OAH 2018</h3>
+    <div><a href="http://www.oah.org/meetings-events/2018/"><img src="img/Logo-for-TV.jpg" class="img-responsive" ></a></div>
+    <h4><a href="#">OAH Theme Visualizer</a></h4>
     <ul id="nav_main" class="nav nav-stacked">
-      <li id="nav_model">
-        <a href="#/model">Explore</a>
-        <ul id="nav_model_nav" class="nav nav-stacked">
-          <li id="nav_model_grid" class="active">
-            <a href="#/model/grid">Topic grid</a>
-          </li>
-          <li id="nav_model_scaled">
-            <a href="#/model/scaled">Topic space</a>
-          </li>
-          <li id="nav_model_list">
-            <a href="#/model/list">Topic list</a>
-          </li>
-        </ul>
-      </li>
-      <li id="nav_topic" class="dropdown">
-        <a href="#/topic" class="dropdown-toggle" data-toggle="dropdown" data-target="#" id="topic_dropdown_toggle">
-          Topic<b class="caret"></b>
-        </a>
-        <ul id="topic_dropdown" class="dropdown-menu scroll-menu" role="menu" aria-labelledby="topic_dropdown_toggle">
-          <li class="disabled loading_message">
-            <a href="#/topic">Loading topics...</a>
-          </li>
-        </ul>
-      </li>
+      <li id="nav_model_grid"><a href="#/model/grid">Topic grid</a></li>
+      <li id="nav_model_list"><a href="#/model/list">Topic list</a></li>
       <li id="nav_words"><a href="#/words">Word index</a></li>
+      <li id="nav_help"><a href ="#getting_started"
+            data-toggle="modal" data-target="#getting_started_modal">
+          Getting started
+        </a></li>
     </ul>
   </div>
 </div>
 
 <div id="view" class="col-md-10 col-sm-10 col-xs-12">
-  <div id="error" class="alert alert-danger alert-dismissable hidden">
-    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-  </div>
-
-  <div id="warning" class="alert alert-warning alert-dismissable hidden">
-    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-  </div>
 
   <div id="model_view" class="hidden">
     <button id="reset_zoom" type="button"
@@ -147,12 +151,12 @@
             </div>
           </div> -->
           <div id="topic_docs">
-            <h3 id="topic_docs_header" class="h-small">Top articles<span class="topic_year"></span></h3>
+            <h3 id="topic_docs_header" class="h-small">Top events<span class="topic_year"></span></h3>
             <p class="help none">There are no articles containing this topic<span class="topic_year"></span>.</p>
             <table class="table table-condensed hidden calc-done">
               <thead>
                 <tr>
-                  <th id="topic_docs_doc">Article</th>
+                  <th id="topic_docs_doc">Event</th>
                   <th id="topic_docs_weight"></th>
                   <th id="topic_docs_frac" class="th-right">%</th>
                   <th id="topic_docs_tokens" class="th-right">Tokens</th>
@@ -227,11 +231,13 @@
     </div>
   </div>
 
+
   <div id="words_view" class="hidden">
     <h2>All words prominent in any topic</h2>
     <p class="help">Words not prominent in any topic are not listed</p>
     <ul id="vocab_list" class="list-unstyled"></ul>
   </div>
+
 
 </div> <!-- #view -->
 </div> <!-- .row -->
