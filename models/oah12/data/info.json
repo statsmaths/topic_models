@@ -37,7 +37,7 @@
             "author_delimiter": ", "
         },
         "special_issue_class": "special_issue_nohighlight",
-        "hidden_topics": [1
+        "hidden_topics": [
 
         ],
         "show_hidden_topics": false
@@ -46,7 +46,7 @@
 
     ],
     "names": {
-        "1": "",
+        "1": "Memory and culture",
         "2": "Government impact",
         "3": "Activism and movements",
         "4": "Citizenship and borders",
