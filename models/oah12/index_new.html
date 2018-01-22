@@ -12,12 +12,12 @@
 <head>
   <meta charset="utf-8">
   <title>Topic Model</title>
-  <script type="text/javascript" src="../../lib/d3.min.js"></script>
+  <script type="text/javascript" src="lib/d3.min.js"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="../../css/bootstrap.min.css" media="screen">
+  <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
 
-  <link rel="stylesheet" href="../../css/model.css" type="text/css">
+  <link rel="stylesheet" href="css/model.css" type="text/css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 
@@ -60,11 +60,11 @@
     <div><a href="http://www.oah.org/meetings-events/2018/"><img src="img/Logo-for-TV.jpg" class="img-responsive" ></a></div>
     <h4><a href="#">OAH Theme Visualizer</a></h4>
     <ul id="nav_main" class="nav nav-stacked">
-      <li id="nav_model_grid"><a href="#/model/grid">Topic grid</a></li>
+      <li id="nav_model_grid"><a href="/index.html/#/model/grid">Topic grid</a></li>
       <li id="nav_model_list"><a href="#/model/list">Topic list</a></li>
-      <li id="nav_words"><a href="#/bib">Articles</a></li>
-      <li id="nav_words"><a href="#/words">Word index</a></li>
-      <li id="nav_help"><a href ="#getting_started"
+      <li id="nav_words"><a href="/index_new.html">Articles</a></li>
+      <li id="nav_words"><a href="/index.html/#/words">Word index</a></li>
+      <li id="nav_help"><a href ="/index.html/#getting_started"
             data-toggle="modal" data-target="#getting_started_modal">
           Getting started
         </a></li>
@@ -174,33 +174,6 @@
         </div>
       </div>
     </div> <!-- #topic_view_main -->
-  </div>
-
-  <div id="doc_view" class="hidden">
-    <div id="doc_view_help">
-      <p class="help">Choose a specific article to view from
-      <a class="external" href="#/bib">the bibliography</a> or from
-        <a class="external" href="#/topic">a topic page</a>.</p>
-      <p class="help hidden" id="last_doc_help">Below: the last-viewed article. Stable link to this page: <a class="external" id="last_doc" href="#/doc"></a></p>
-    </div>
-    <div id="doc_view_main" class="calc-done">
-      <h2 class="h-small" id="doc_header"></h2>
-      <p id="doc_remark">
-
-      </p>
-      <table class="table table-condensed" id="doc_topics">
-        <thead>
-          <tr>
-            <th id="doc_view_topic" class="wide">Topic</th>
-            <th id="doc_view_weight"></th>
-            <th id="doc_view_frac" class="th-right">%</th>
-            <th id="doc_view_tokens" class="th-right">Tokens</th>
-          </tr>
-        </thead>
-        <tbody>
-        </tbody>
-      </table>
-    </div><!-- #doc_view_main -->
   </div>
 
   <div id="bib_view" class="hidden">
@@ -2683,6 +2656,9 @@
       </table>
   </div>
 
+
+
+
   <div id="word_view" class="hidden">
     <div class="row">
       <div class="col-md-8">
@@ -2729,12 +2705,12 @@
 </div> <!-- .container -->
 
 
-<script type="text/javascript" src="../../lib/jquery-1.11.0.min.js"></script>
-<script type="text/javascript" src="../../lib/bootstrap.min.js"></script>
-<script type="text/javascript" src="../../lib/jszip.min.js"></script>
+<script type="text/javascript" src="lib/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="lib/bootstrap.min.js"></script>
+<script type="text/javascript" src="lib/jszip.min.js"></script>
 
-<script type="text/javascript" src="../../js/utils.min.js"></script>
-<script type="text/javascript" src="../../js/dfb.min.js"></script>
+<script type="text/javascript" src="js/utils.min.js"></script>
+<script type="text/javascript" src="js/dfb.min.js"></script>
 
 <script type="text/javascript">
   $(window).on('load',function(){

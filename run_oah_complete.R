@@ -9,7 +9,7 @@ library(topicmodels)
 library(tidytext)
 
 source("scripts.R")
-
+"The Forms Of Campus History"
 #######################################################################
 # oah, paper abstracts
 
@@ -25,15 +25,13 @@ prop <- xlsx::read.xlsx("~/Desktop/2018 AM Proposal Data_10.11.2017.xlsx",
                         sheetIndex = 1, , stringsAsFactors = FALSE)
 prop <- prop[nchar(as.character(prop$Proposal.Abstract)) > 100,]
 prop <- prop[!is.na(nchar(as.character(prop$Proposal.Abstract))),]
-prop <- prop[!duplicated(prop$Proposal.Abstract),]
-prop <- prop[!duplicated(prop$Proposal.Title),]
 prop$Participant.Title[is.na(prop$Participant.Title)] <- ""
 prop$Participant.First.Name[is.na(prop$Participant.First.Name)] <- ""
 prop$Participant.Middle.Name[is.na(prop$Participant.Middle.Name)] <- ""
 prop$Participant.Last.Name[is.na(prop$Participant.Last.Name)] <- ""
 prop$Participant.Suffix[is.na(prop$Participant.Suffix)] <- ""
 prop$Participant.Affiliation[is.na(prop$Participant.Affiliation)] <- ""
-prop$author <- sprintf("%s %s %s %s (%s %s)", prop$Participant.Title,
+prop$author <- sprintf("%s %s %s %s %s (%s)", prop$Participant.Title,
                                        prop$Participant.First.Name,
                                        prop$Participant.Middle.Name,
                                        prop$Participant.Last.Name,
@@ -44,10 +42,18 @@ prop$author <- stri_replace_all(prop$author, "", regex = "$ ")
 prop$author <- stri_replace_all(prop$author, "", regex = " ^")
 prop$author <- stri_replace_all(prop$author, "(", fixed = "( ")
 prop$author <- stri_replace_all(prop$author, ")", fixed = " )")
+prop$author <- stri_replace_all(prop$author, "", fixed = "())")
 prop$author <- stri_replace_all(prop$author, "", fixed = "\"")
 prop$author[stri_length(prop$author) < 10] <- ""
 prop$time <- sprintf("%s to %s", stri_sub(as.character(prop$Start.Time), 12, 16),
                                  stri_sub(as.character(prop$End.Time), 12, 16))
+
+author <- tapply(prop$author, prop$Proposal.ID,
+                 function(v) paste(unique(v), collapse = "; "))
+id <- match(prop$Proposal.ID, names(author))
+prop$author <- author[id]
+prop <- prop[!duplicated(prop$Proposal.Abstract),]
+prop <- prop[!duplicated(prop$Proposal.Title),]
 
 # PREPARE PAPER DATA
 paper <- xlsx::read.xlsx("~/Desktop/2018 AM Paper Data _10.11.2017.xlsx",
@@ -159,6 +165,65 @@ mallet_obj <- learn_topics_oah(toks, ntopics = 14, seed = 7)
 
 # BUILD WEBSITE
 build_webpage("oah12", mallet_obj, data$desc, data$title)
+
+# BUILD INDEX PAGE
+library(stringi)
+
+x <- readLines("models/oah12/data/meta.csv")
+title <- stri_sub(x, stri_locate(x, fixed = ",\"")[,1] + 2, -1)
+type <- stri_sub(sapply(stri_split(x, fixed = "<p>"), getElement, 4), 18, -10)
+prop_title <- sapply(stri_split(x, fixed = "<p>"), getElement, 5)
+id <- stri_detect(prop_title, fixed = "Session:")
+prop_title <- stri_sub(prop_title, 21, -10)
+prop_title[!id] <- title[!id]
+title[!id] <- ""
+title <- stri_replace_all(title, "", fixed = "\"")
+prop_title <- stri_replace_all(prop_title, "", fixed = "\"")
+
+id <- which(title == "")
+base_string <- "
+            <tr>
+              <td>%s</td>
+              <td><a href=\"https://humanitiesdata.org/oah2018/#/doc/%d\">%s</a></td>
+              <td></td>
+            </tr>"
+out1 <- sprintf(base_string, type, 0:492, prop_title)[id]
+sby <- prop_title[id]
+
+id <- which(title != "")
+base_string <- "
+            <tr>
+              <td>%s</td>
+              <td>%s</td>
+              <td><a href=\"https://humanitiesdata.org/oah2018/#/doc/%d\">%s</a></td>
+            </tr>"
+out2 <- sprintf(base_string, type, prop_title, 0:492, title)[id]
+sby <- c(sby, prop_title[id])
+
+out <- c(out1, out2)
+out <- out[order(sby)]
+
+# NEED TO MANUALLY PUT THIS INTO INDEX ON SERVER
+# FIND THIS: <div id="doc_view" class="hidden">
+cat(out, file = "~/Desktop/temp.txt")
+
+
+  # <div id="doc_view" class="hidden">
+  #   <div id="doc_view_help">
+  #     <table class="table table-condensed" id="doc_topics">
+  #       <thead>
+  #         <tr>
+  #           <th>Type</th>
+  #           <th class="wide">Proposal Title</th>
+  #           <th class="wide">Paper Title</th>
+  #         </tr>
+  #       </thead>
+  #       <tbody>
+  #         DATA HERE
+  #       </tbody>
+  #     </table>
+  #   </div><!-- #doc_view_main -->
+  # </div>
 
 
 
