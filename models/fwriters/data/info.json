@@ -38,6 +38,8 @@
         },
         "special_issue_class": "special_issue_nohighlight",
         "hidden_topics": [
+            6,
+            15
 
         ],
         "show_hidden_topics": false
@@ -46,21 +48,21 @@
 
     ],
     "names": {
-        "1": "Topic 001",
-        "2": "Topic 002",
-        "3": "Topic 003",
-        "4": "Topic 004",
-        "5": "Topic 005",
+        "1": "Home",
+        "2": "Business I",
+        "3": "Quotidien",
+        "4": "Farming",
+        "5": "Education",
         "6": "Topic 006",
-        "7": "Topic 007",
-        "8": "Topic 008",
-        "9": "Topic 009",
-        "10": "Topic 010",
-        "11": "Topic 011",
-        "12": "Topic 012",
-        "13": "Topic 013",
-        "14": "Topic 014",
-        "15": "Topic 015"
+        "7": "Family",
+        "8": "Oil",
+        "9": "Dialect I",
+        "10": "Professional",
+        "11": "Child/Labor",
+        "12": "Business II",
+        "13": "Dialect II",
+        "14": "Finances",
+        "15": ""
     }
 }
 
