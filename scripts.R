@@ -136,7 +136,8 @@ learn_topics_oah <- function(text, ntopics, seed = 1L) {
   # run mallet
   tf <- tempfile()
   writeLines(c("be", "go", "have", letters, LETTERS), tf)
-  inst <- mallet.import(as.character(seq_along(text)), text, tf)
+  inst <- mallet.import(as.character(seq_along(text)), text,
+                        tf, preserve.case=TRUE)
   mallet_obj <- MalletLDA(num.topics = as.double(ntopics))
   mallet_obj$model$setRandomSeed(as.integer(seed))
   mallet_obj$loadDocuments(inst)
