@@ -23,17 +23,17 @@ build_webpage <- function(name, mallet_obj, links, titles,
   }
 
   # subset topics because Lauren is a pain!
-  if (!is.null(topic_nums)) {
-    docs <- docs[,topic_nums]
-    words <- words[topic_nums,]
+  # if (!is.null(topic_nums)) {
+  #   docs <- docs[,topic_nums]
+  #   words <- words[topic_nums,]
 
-    # remove words that no longer appear in any topics
-    remove_these <- which(apply(words, 2, sum) == 0)
-    if (length(remove_these)) {
-      words <- words[,-remove_these]
-      vocab <- vocab[-remove_these]
-    }
-  }
+  #   # remove words that no longer appear in any topics
+  #   remove_these <- which(apply(words, 2, sum) == 0)
+  #   if (length(remove_these)) {
+  #     words <- words[,-remove_these]
+  #     vocab <- vocab[-remove_these]
+  #   }
+  # }
 
   # topic 8 does not show up; no idea why; create a place
   # holder by copying topic 1:

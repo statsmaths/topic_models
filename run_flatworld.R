@@ -55,6 +55,15 @@ toks <- as.character(unlist(lapply(toks, paste, collapse = " ")))
 
 mallet_obj <- learn_topics_oah(toks, ntopics = 15, seed = 7)
 
+# Get TF-IDF
+X <- cnlp_get_tfidf(anno)
+cnames <- colnames(X)
+cnames <- stri_replace_all(cnames, "", regex = "[^A-Za-z]")
+ok <- which(stri_length(cnames) >= 3)
+Y <- t(apply(X[,ok], 1, function(v) order(v, decreasing=TRUE)[1:10]))
+words <- matrix(cnames[ok][Y], ncol = ncol(Y))
+words <- apply(words, 1, function(v) stri_paste(v, collapse = "; "))
+
 # Get Metadata
 meta <- read_csv("fw_metadata.csv")
 names(meta)[1] <- "id"
@@ -68,10 +77,15 @@ desc$title[is.na(desc$title)] <- "Unavailable"
 desc$desc <- sprintf("<b>Interviewee:</b> %s<br><b>Interviewer:</b> %s",
                       desc$`interviewee_1 (real name)`,
                       desc$interviewer_1)
+desc$desc <- stri_replace_all(desc$desc, "\'", fixed = "\"")
+desc$desc <- sprintf("%s\n<br><b>Key Words:</b> %s", desc$desc, words)
 txt <- stri_replace_all(text_nl, "<br>", fixed = "\n")
 txt <- stri_replace_all(txt, "", regex="[^a-zA-Z0-9 \\.!?\\'<>]")
+base_txt_url <- "https://raw.githubusercontent.com/statsmaths/topic_models/gh-pages/flatworld/"
+desc$desc <- sprintf("%s\n<br><b>Full Text:</b> <a href=\'%s/%s.txt\' style=\'color=\'>Link</a>", desc$desc,
+                     base_txt_url, desc$id)
 desc$desc <- sprintf("%s\n<br><b>Sample Text:</b><br>... %s ...", desc$desc,
-                     stri_sub(txt, 1000, 2000))
+                     stri_sub(txt, 1000, 1500))
 
 
 # BUILD WEBSITE
