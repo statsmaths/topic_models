@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+
+  <!-- A topic model viewer, based on original code the Signs at 40
+    Project. Original code is released under an MIT license, Copyright
+    Andrew Goldstone, Susana Galán, C. Laura Lovin, Andrew Mazzaschi,
+    and Lindsey Whitmore. See: https://github.com/signs40th/topic-model
+    Modifications are the work of Taylor Arnold. See the LICENSE file
+    for more details.
+  -->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Topic Model</title>
+  <script type="text/javascript" src="../../lib/d3.min.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../../css/bootstrap.min.css" media="screen">
+
+  <link rel="stylesheet" href="../../css/model.css" type="text/css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+
+
+<div class="modal fade" id="getting_started_modal" tabindex="-1"
+    role="dialog" aria-labelledby="getting_started_title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="getting_started_title">OAH Theme Visualizer</h4>
+      </div>
+      <div class="modal-body">
+        <p>This website allows participants to explore related events across conference formats by theme.  Using a computational method called topic modeling, which identifies latent themes in a textual corpus, each event is assigned to a topic. Each topic is a list of words that tend to co-occur in the same documents. These topics can be understood as themes or discourses. Select a theme and see the related events. Select the event and see corresponding information such as speaker, date, and time.</p>
+        <ul>
+        <li><b>Topic Grid:</b> Visualizes thirteen themes that are prevelant throughout the conference. The first seven associated words are provided.  Click on the theme to see related events.</li>
+        <li><b>Topic List:</b> Lists the same twelve topics avaiable in the grid. For each theme, the most prevelant words are listed.  The bar graph and percentage on the far right give the proporation of the events that are assigned to the theme.</li>
+        <li><b>Word index:</b> List of words that are prominent in the twelve topics. </li>
+        </ul>
+        <p>Within each theme, there is a list of the top 20 events alongside the percentage with which that event corresponds with the theme. The top words lists the words that define the theme. Click on the event to see more details including the data, time, event type and abstract. Content accurate as of September 2017. Some changes may occur to the final program.</p>
+        <p>The OAH Theme Visualizer is built by <a href="https://laurentilton.com">Lauren Tilton</a> and <a href="https://statsmaths.github.com">Taylor Arnold</a>. Adapted from the <a href="https://github.com/signs40th/topic-model">Signs@40 interface</a> developed by Andrew Goldstone, Susana Galán, C. Laura Lovin, Andrew Mazzaschi, and Lindsey Whitmore.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default pull-right"
+            data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="main_container" class="container-fluid">
+<div class="row">
+
+<div id="dfb_nav" class="col-md-2 col-sm-2 col-xs-12">
+  <div id="dfb_nav_collapse">
+    <div><a href="https://www.oah.org/meetings-events/oah20/"><img src="img/Logo-for-TV.jpg" class="img-responsive" ></a></div>
+    <h4><a href="#">OAH Theme Visualizer</a></h4>
+    <ul id="nav_main" class="nav nav-stacked">
+      <li id="nav_model_grid"><a href="#/model/grid">Topic grid</a></li>
+      <li id="nav_model_list"><a href="#/model/list">Topic list</a></li>
+      <li id="nav_words"><a href="#/bib">Articles</a></li>
+      <li id="nav_words"><a href="#/words">Word index</a></li>
+      <li id="nav_help"><a href ="#getting_started"
+            data-toggle="modal" data-target="#getting_started_modal">
+          Getting started
+        </a></li>
+      <li style="padding-top:24px"><a href ="https://www.oah.org/meetings-events/oah20/">
+          <i class="fa fa-arrow-left" aria-hidden="true"></i> Back to Meetings
+        </a></li>
+    </ul>
+  </div>
+</div>
+
+<div id="view" class="col-md-10 col-sm-10 col-xs-12">
+
+  <div id="model_view" class="hidden">
+    <button id="reset_zoom" type="button"
+      class="btn btn-default btn-xs pull-right invisible
+        view_model_scaled-vis view_model_yearly-vis">
+      Reset zoom
+    </button>
+    <div id="model_view_list" class="hidden">
+      <table class="table table-condensed">
+        <thead>
+          <tr>
+            <th id="model_view_list_name" class="sort">
+              <a href="#/model/list/name" title="click to sort">
+                topic (and top words)
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
+            <th colspan="2" id="model_view_list_frac" class="sort text-right">
+              <a href="#/model/list/frac" title="click to sort">
+                proportion of corpus
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="calc-done">
+        </tbody>
+      </table>
+    </div>
+    <div id="model_view_plot" class="hidden">
+    </div>
+    <div id="model_view_yearly" class="hidden">
+    </div>
+  </div>
+
+  <div id="topic_view" class="hidden">
+    <div id="topic_view_help" class="hidden">
+      <p class="help">Select a topic from the “Topic” menu at left.</p>
+    </div>
+    <div id="topic_view_main">
+        <div id="topic_view_header">
+          <h2 id="topic_header"></h2>
+          <h3 id="topic_subheader" class="hidden">
+            <span class="topic_subtitle"></span>
+          </h3>
+        </div>
+        <div id="topic_view_annotation">
+          <!-- insert class="view_topic_nn" specific notes here -->
+        </div>
+      <div class="row">
+        <div class="col-md-3">
+          <h3 class="h-small">Top words</h3>
+          <table class="table table-condensed" id="topic_words">
+            <thead>
+              <tr>
+                <th>Word</th>
+                <th class="th-right">Weight</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+        </div>
+        <div class="col-md-9">
+           <!-- <div id="topic_yearly">
+            <div class="pull-left">
+              <h3 class="h-small">Yearly proportion of words in topic</h3>
+              <p>
+                <span id="topic_remark"></span> in total.
+                <span class="help">
+                  Click a bar to limit articles to that year.
+                </span>
+              </p>
+            </div>
+            <div class="pull-right">
+              <button class="btn btn-default disabled" type="button"
+                id="topic_year_clear">clear selected year</button>
+            </div>
+            <div id="topic_plot">
+            </div>
+          </div> -->
+          <div id="topic_docs">
+            <h3 id="topic_docs_header" class="h-small">Top events<span class="topic_year"></span></h3>
+            <p class="help none">There are no articles containing this topic<span class="topic_year"></span>.</p>
+            <table class="table table-condensed hidden calc-done">
+              <thead>
+                <tr>
+                  <th id="topic_docs_doc">Event</th>
+                  <th id="topic_docs_weight"></th>
+                  <th id="topic_docs_frac" class="th-right">%</th>
+                  <th id="topic_docs_tokens" class="th-right">Tokens</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div> <!-- #topic_docs -->
+        </div>
+      </div>
+    </div> <!-- #topic_view_main -->
+  </div>
+
+  <div id="doc_view" class="hidden">
+    <div id="doc_view_help">
+      <p class="help">Choose a specific article to view from
+      <a class="external" href="#/bib">the bibliography</a> or from
+        <a class="external" href="#/topic">a topic page</a>.</p>
+      <p class="help hidden" id="last_doc_help">Below: the last-viewed article. Stable link to this page: <a class="external" id="last_doc" href="#/doc"></a></p>
+    </div>
+    <div id="doc_view_main" class="calc-done">
+      <h2 class="h-small" id="doc_header"></h2>
+      <p id="doc_remark">
+
+      </p>
+      <table class="table table-condensed" id="doc_topics">
+        <thead>
+          <tr>
+            <th id="doc_view_topic" class="wide">Topic</th>
+            <th id="doc_view_weight"></th>
+            <th id="doc_view_frac" class="th-right">%</th>
+            <th id="doc_view_tokens" class="th-right">Tokens</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div><!-- #doc_view_main -->
+  </div>
+
+  <div id="bib_view" class="hidden">
+      <table class="table table-condensed" id="doc_topics">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th class="wide">Proposal Title</th>
+            <th class="wide">Paper Title</th>
+          </tr>
+        </thead>
+        <tbody>
+
+
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/340">(De)Pathologizing Homosexuality: The Political Fractures Of Psychiatry, Anti-Psychiatry, And Homosexual Movements</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>(De)Pathologizing Homosexuality: The Political Fractures Of Psychiatry, Anti-Psychiatry, And Homosexual Movements</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/22">A Very Strange Case Of Female Transsexualism: The University-Based Gender Clinics And The Crafting Of A Diagnosis, 1957–1980</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>(De)Pathologizing Homosexuality: The Political Fractures Of Psychiatry, Anti-Psychiatry, And Homosexual Movements</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/109">From Perverts To Politicians: Community Mental Health, Anti-Poverty Funding, And Homosexual Respectability In Los Angeles, 1965–1986</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>(De)Pathologizing Homosexuality: The Political Fractures Of Psychiatry, Anti-Psychiatry, And Homosexual Movements</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/262">The Lunar Effect: Self-Loss And Cosmic Consciousness In The Mad-Queer 1970s</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/342"><B>A Unified Front Against Police Brutality: How Chicano/As And Their Allies Challenged Police Repression And Violence</B></a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td><B>A Unified Front Against Police Brutality: How Chicano/As And Their Allies Challenged Police Repression And Violence</B></td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/186">Police Slay Two Berets: How The Police Killings Of Antonio Cordova And Rito Canales Spurred Criminal Justice Reform In New Mexico</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td><B>A Unified Front Against Police Brutality: How Chicano/As And Their Allies Challenged Police Repression And Violence</B></td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/240">The Birth Of The Triumvirate Alliance: Black, Brown, And White Organizing Against Police Brutality In Dallas, Texas</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td><B>A Unified Front Against Police Brutality: How Chicano/As And Their Allies Challenged Police Repression And Violence</B></td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/328">The Cops Regard Us As The Enemy: Faith Institutions And Latino Activism Against Police Harassment In Civil Rights-Era Milwaukee</a></td>
+            </tr>
+            <tr>
+              <td>Film Screening</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/343"><I>Just Like Me: The Vietnam War/Theamerican War</I></a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td><Span Style=Background-Color: Rgb(255, 255, 255);>Emerging Queer Histories Of Hiv/Aids&Nbsp;Lightning Round</Span></td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/144">Locked In: (His)Stories From Black Gay Cultural Renaissance Of The 1980s Era</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td><Span Style=Background-Color: Rgb(255, 255, 255);>Emerging Queer Histories Of Hiv/Aids&Nbsp;Lightning Round</Span></td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/175">Out Of The Silence: Women Protesting The Aids Epidemic, 1980–2019</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td><Span Style=Background-Color: Rgb(255, 255, 255);>Emerging Queer Histories Of Hiv/Aids&Nbsp;Lightning Round</Span></td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/196">Queer Belonging & Hiv-Positive Black Caribbean Women</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td><Span Style=Background-Color: Rgb(255, 255, 255);>Emerging Queer Histories Of Hiv/Aids&Nbsp;Lightning Round</Span></td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/276">The Straight State Reconsidered: Gay Policy-Makers And The California Aids Epidemic</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td><Span Style=Background-Color: Rgb(255, 255, 255);>Emerging Queer Histories Of Hiv/Aids&Nbsp;Lightning Round</Span></td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/321">Our Poems As Weapons Of Survival: Assotto Saint And The Poetics And Politics Of Aids Writing</a></td>
+            </tr>
+            <tr>
+              <td>State of the Field</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/341">100 Years Of Women And Politics Since The 19th Amendment</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/344">A Crowdsourcing Approach To Revitalizing Scholarship On Black Women Suffragists: A Revisionist Contribution To The Centennial Of Woman Suffrage</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/345">A Pivotal Work: Honoring Earl Lewis's To Turn As On A Pivot: Writing African Americans Into A History Of Overlapping Diasporas, 25 Years Later</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/347">A Promising Problem Indeed: New Methods And Interpretations In  Chicana/O Educational History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>A Promising Problem Indeed: New Methods And Interpretations In  Chicana/O Educational History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/65">Census Breakthroughs In The 1930 Portraiture Of Mexican American Teachers</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>A Promising Problem Indeed: New Methods And Interpretations In  Chicana/O Educational History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/100">Escuelitas And The Mexican American Generations Campaign For Educational Integration</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>A Promising Problem Indeed: New Methods And Interpretations In  Chicana/O Educational History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/205">Recovering Mexican American Narratives Despite Omissions And Distortions In The Official Archives: A Methodological Reflection</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>A Promising Problem Indeed: New Methods And Interpretations In  Chicana/O Educational History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/280">Top-Down Chicano/A History?: The U.S. Commission On Civil Rights, Mexican American Advocacy Groups, And Education In The 1960s</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/346">A Retrospective And Reimagining Of The Ahas Tuning And Career Diversity Initiatives</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/348">Addressing (In)Equalities In The American History Classroom</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Agricultural History: Emerging Scholarship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/17">A New Curators Perspective On Collecting Brewing History</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Agricultural History: Emerging Scholarship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/31">Agricultural Architecture: Housing Labor On The Farm</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Agricultural History: Emerging Scholarship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/32">Agriculture And The Environment: A Plains Perspective</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Agricultural History: Emerging Scholarship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/38">Animals In Agriculture</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Agricultural History: Emerging Scholarship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/73">Community Conflict And Consent To Big Agribusiness</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Agricultural History: Emerging Scholarship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/148">Mapping Climate Change</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Agricultural History: Emerging Scholarship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/189">Populism And The Business Of Progress</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/349">American Anti-Semitism: New Approaches And Frameworks</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/350">American Military Culture In The Civil War And Beyond</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Military Culture In The Civil War And Beyond</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/70">Civil War Memory And The Great Chicago Fire</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Military Culture In The Civil War And Beyond</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/86">Deconstructing The Lost Cause:  Enforcing A Slave Regime And The Origin Of Confederate Military Superiority</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Military Culture In The Civil War And Beyond</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/251">The Decline Of American Zouaves</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/351">American Silk, Transnational Commerce, And Geographies Of Identity</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Silk, Transnational Commerce, And Geographies Of Identity</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/25">Accidental Agents Of Global Empire: Silkworms Impact On Eighteenth-Century British Colonialism</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Silk, Transnational Commerce, And Geographies Of Identity</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/165">New World Silk And The Natural History Of Settler Colonialism</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Silk, Transnational Commerce, And Geographies Of Identity</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/299">A Gold Mine In Embryo: Mormon Women, Silk Work, And Transnational Business In The Nineteenth-Century American West</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/352">American Woman Suffrage At 100: Transnational Perspectives</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Woman Suffrage At 100: Transnational Perspectives</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/0">At Best A Very Controversial Issue: The International Council Of Women And The Suffrage Question</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Woman Suffrage At 100: Transnational Perspectives</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/6">Sisters Unite! Transnational Womens Rights Activism In The 19th Century</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Woman Suffrage At 100: Transnational Perspectives</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/26">Across The Pacific: The Japanese-American Suffrage Nexus</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>American Woman Suffrage At 100: Transnational Perspectives</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/179">Pan-American Feminism And Womens Suffrage In The Americas</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/353">Anti-Apartheid Politics: Anticommunism, Corporate Campaigns, And The Long Civil Rights Movement</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Anti-Apartheid Politics: Anticommunism, Corporate Campaigns, And The Long Civil Rights Movement</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/3">Radicals In A Broader Sense: Anti-Apartheid Politics And The Long Arm Of The Civil Rights Movement</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Anti-Apartheid Politics: Anticommunism, Corporate Campaigns, And The Long Civil Rights Movement</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/112">From Shareholder Activism To Trade Union Corporate Campaigns: How The International Anti-Apartheid Movement Reshaped The American Left</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Anti-Apartheid Politics: Anticommunism, Corporate Campaigns, And The Long Civil Rights Movement</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/220">Selling Apartheid: White Supremacy And The Politics Of Anticommunism</a></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/354">Argument, Form, And Method: Lessons Learned From Three Digital Dissertations In History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/355">Asian/American Women, The State, And Belonging</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Asian/American Women, The State, And Belonging</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/125">Indonesian American Women, The Inter-Empire, And The U.S.:  The State, Gender, And Belonging</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Asian/American Women, The State, And Belonging</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/178">Pageant Politics: Gendered And Racial Practices Of Belonging And Exclusion Under U.S. Empire</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Asian/American Women, The State, And Belonging</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/180">Patsy Mink And Welfare Reform:  Race, Gender, And Resistance</a></td>
+            </tr>
+            <tr>
+              <td>Offsite Session</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/356">Because Of Her Story: Womens History And The Public</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/357">Beyond The Grave: Black Resistance And The Deceased</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Film Screening</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/358">Birth Of A Movement: Do You Know William Monroe Trotter?</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/359">Black Political Power Against Inequality In Memphis, Tennessee</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Black Political Power Against Inequality In Memphis, Tennessee</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/16">A Matter Of Black And White: The John Gaston Hospital Controversy In Memphis, Tennessee</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Black Political Power Against Inequality In Memphis, Tennessee</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/158">Mobilizing For The Med: Civil Rights Veterans Push For Better Health Care</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Black Political Power Against Inequality In Memphis, Tennessee</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/212">Robert R. Church Jr. And The 1917 Lynching Of Ell Persons In Memphis, Tennessee</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/360">Black Radicalism And The New Left, 1955–1970</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Black Radicalism And The New Left, 1955–1970</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/71">Claudia Jones, The West Indian Gazette And The Rise Of A New Black Radicalism In The U.k. And The U.S.</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Black Radicalism And The New Left, 1955–1970</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/200">Radical Black Artists Constitute A Black New Left, 1958–1964</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Black Radicalism And The New Left, 1955–1970</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/234">Superblack: Brumsic Brandons Freedomways Cartooning</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/361">Black, White, And Red: Antebellum Party Politics On The Ideological Margins</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Black, White, And Red: Antebellum Party Politics On The Ideological Margins</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/37">An Antebellum One Percent: The Slave Power And Republican Party Populism In The 1850s</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Black, White, And Red: Antebellum Party Politics On The Ideological Margins</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/49">Black Republicans, Red Republicans, And The Coming Of The Civil War</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Black, White, And Red: Antebellum Party Politics On The Ideological Margins</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/248">The Color Of Loyalty: Conservatism And Racial Nationalism In Antebellum Politics</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/362">Bringing Partisanship Back In: Party Politics In The Age Of Roosevelt</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/363">Business And (In)Equalities</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Business And (In)Equalities</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/20">A Rich Inheritance: The Not-So-Humble Beginnings Of Silicon Valley</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Business And (In)Equalities</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/51">Black-Owned Businesses And The Inequalities Of Urban Renewal In Detroit, Michigan</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Business And (In)Equalities</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/152">Massachusetts, The Job Paradox, And The Political Economy Of Crisis</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Business And (In)Equalities</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/245">The Chickasaw Press: A Case Study In Indigenous Innovation And Enterprise</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/364">Calculating Inequality: Science, Health, And Citizenship In The Age Of Emancipation</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Calculating Inequality: Science, Health, And Citizenship In The Age Of Emancipation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/136">Last Rites/Lost Rights: Race, Research, And The Disposal Of Human Remains During The Civil War</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Calculating Inequality: Science, Health, And Citizenship In The Age Of Emancipation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/225">Some Measure Of Justice: American Americans And The Biomedical State</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Calculating Inequality: Science, Health, And Citizenship In The Age Of Emancipation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/239">The Atlantic Monthlys Civil-Izing Narrative, 1861–1865</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Calculating Inequality: Science, Health, And Citizenship In The Age Of Emancipation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/273">The Shadow Of Slavery: Measuring Miscegenation In The Early Twentieth Century</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/365">Capital In The Nineteenth Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Capital In The Nineteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/81">Debt And The Politics Of Time</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Capital In The Nineteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/222">Slaves, Banks, And Married Womens Property Rights</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Capital In The Nineteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/300">A Marvellous Affair: The Opium War And The Panic Of 1839</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/366">Challenging Inequality In Americas Civil Courts: African American Litigants In The Era Of Jim Crow</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Challenging Inequality In Americas Civil Courts: African American Litigants In The Era Of Jim Crow</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/29">African American Women's Civil Litigation In The Jim Crow South</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Challenging Inequality In Americas Civil Courts: African American Litigants In The Era Of Jim Crow</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/142">Litigants And Liaisons: Black Civil Litigation And Legal Networking Under Jim Crow</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Challenging Inequality In Americas Civil Courts: African American Litigants In The Era Of Jim Crow</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/232">Streetcars, Segregation And Civil Suits: Black Litigants In Memphis Civil Courts</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/367">Cold War, Culture Wars, And The Cultural Politics Of Violence</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Cold War, Culture Wars, And The Cultural Politics Of Violence</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/36">Americas Worst Disease: The Death Of Yoshi Hattori And The Movement Against Gun Violence</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Cold War, Culture Wars, And The Cultural Politics Of Violence</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/322">Pleasure And Danger: The Feminist Sex Wars And Responses To Sexual Violence On American College Campuses</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Cold War, Culture Wars, And The Cultural Politics Of Violence</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/327">The Capital Of Fear: The Atlanta Youth Murders And The Transnational Politics Of Racial Violence</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/368">Comedy, Cartoons, And Satire: Communicating Science And Technology</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Comedy, Cartoons, And Satire: Communicating Science And Technology</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/69">Chicken Is A Funny Word: The Distortions Of Seriousness In Histories Of Agricultural Knowledge</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Comedy, Cartoons, And Satire: Communicating Science And Technology</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/114">Geology And The Hundred Other Ologies,: The Role Of Parody In The Making Of The First Public Science</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Comedy, Cartoons, And Satire: Communicating Science And Technology</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/184">Poetic Plumbing And Laughable Labor: Humorous Lessons In New Technology</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Comedy, Cartoons, And Satire: Communicating Science And Technology</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/238">Technological Resistance Is A Joke: How Satirists And Comics Cracked Back At Triumphalist Innovators In The Early 1900s</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/369">Commemorating The National Semiquincentennial</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/370">Communities Of Color And Public History: Challenges, Strategies, And Questions For Budding And Seasoned Public Historians</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/371">Confronting Norms: Gender, Sex, And Sexuality In 20th-Century America</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/372">Conscience Politics In The Twentieth-Century United States</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Conscience Politics In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/221">Sex, War, And Conscience: The Catholic Church And The Rise Of Conscience Protections</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Conscience Politics In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/246">The Church Amendment Reconsidered: Lost Assumptions Of The First Federal Health Care Conscience Clause</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Conscience Politics In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/304">Call It Conscience Or God: Defining Religious Belief, 1940–1948</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/373">Contested Capacities, Contested Citizenship</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Contested Capacities, Contested Citizenship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/61">Capacity For Education:  Disability, Schools, And State Support In The Early Republic</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Contested Capacities, Contested Citizenship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/210">Resisting Incompetence: Adults Under Guardianship And The Claiming Of Capacity</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Contested Capacities, Contested Citizenship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/303">At The Convenience Of The Government:  Disabled Afro-Caribbean-American Ex-Gis And The Immigration And Naturalization And Va Politics Of Post-World War II America</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Contested Capacities, Contested Citizenship</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/313">Im 75–80 Percent Disabled:  Vietnam War Veterans, The Va, And Agent Orange</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/374">Contingent Academic Labor And Professional Associations</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/375">Copyright, Author's Rights, And Publishing Contracts: A Re-Introduction&Nbsp;</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/376">Critical Pedagogy &Amp; Experiential Learning: Experiments In Active Learning In The History Classroom</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/377">Culturally Responsive Teaching</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/378">Debt And Dispossession: Racial Capitalism And African American Economic Life In Historical Perspective</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Debt And Dispossession: Racial Capitalism And African American Economic Life In Historical Perspective</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/82">Debt And The Promise Of Freedom: Evidence From Slave Narratives On Credit Arrangements Before Modern Banks</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Debt And Dispossession: Racial Capitalism And African American Economic Life In Historical Perspective</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/91">Disinherited, Dispossessed, And Decapitalized: The Limits Of Black Wealth In America, 1619–2019</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Debt And Dispossession: Racial Capitalism And African American Economic Life In Historical Perspective</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/92">Domesticating Racial Capitalism: Freedwomen And Industrial Sewing Schools, 1863–1872</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/379">Defining American Religion In A Global Age</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/380">Defining Status And Self In North American Borderlands, 1700s–1900s</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Defining Status And Self In North American Borderlands, 1700s–1900s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/131">John Galphin: Patriot Heir, Loyalist Accomplice, Mestizo Creek</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Defining Status And Self In North American Borderlands, 1700s–1900s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/134">Kinship, Commerce, And Property In Gendered Indigenous Borderlands Of The Eighteenth And Nineteenth Century Great Lakes</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Defining Status And Self In North American Borderlands, 1700s–1900s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/199">Racialized Identities In Militarized Spaces: Gender, Autonomy, And Texas And New Mexico's Military Forts, 1848–1877</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/381">Dependency And Other Intellectual Histories From The Global South</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Dependency And Other Intellectual Histories From The Global South</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/88">Dependency And Development: Latin America And The Global Social Sciences</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Dependency And Other Intellectual Histories From The Global South</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/122">In Search Of The Socialist Subject: Radical Political Economy And The Study Of Moral Incentives In The Third World</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Dependency And Other Intellectual Histories From The Global South</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/201">Raul Prebisch And The Economic Consequences Of The Korean War Boom</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Dependency And Other Intellectual Histories From The Global South</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/265">The Metaphysics Of Underdevelopment: Paul Baran, Ceso, And The Epistemological Challenge To Modernization Theory</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Different Approaches To Liberating Minds And Bodies: Gender Activism In The 1970s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/5">Should I Be Concerned?: Gender, Class And Pornography Advice Columns In The 1970s</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Different Approaches To Liberating Minds And Bodies: Gender Activism In The 1970s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/129">It Is Our Duty To Defend All Oppressed Peoples: Armed Resistance As A Feminist Strategy For Liberation</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Different Approaches To Liberating Minds And Bodies: Gender Activism In The 1970s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/279">This Is How We Do It</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/382">Difficult Females: The Women Who Brought Down Powerful Men Before #Metoo</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Difficult Females: The Women Who Brought Down Powerful Men Before #Metoo</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/203">Recalling The Mayoress: Power, Politics, And Historical Memory In Hunnewell, Kansas (1911)</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Difficult Females: The Women Who Brought Down Powerful Men Before #Metoo</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/331">The Sin Of Lewdness: How The New York Female Benevolent Society Brought Down A Fellow Moral Crusader</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Difficult Females: The Women Who Brought Down Powerful Men Before #Metoo</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/336">Virginal Child Or Party Girl?: Madge Oberholtzer And The Fall Of D.c. Stephenson</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/383">Digital Cultural History: A Roundtable</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/384">Digital Humanities Approaches To Visualizing America In Africa During The Age Of Empire</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/385">Disability In U.S. History: Integrating Disability History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/386">Disabled Veterans, New Histories</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Disabled Veterans, New Histories</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/23">A Veteran Of Crime: Criminally Insane Veterans In The Gilded Age</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Disabled Veterans, New Histories</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/242">The Blind Men And The Elephant: American Zoos, Disabled Veterans, And The Performative Culture Of Thankfulness</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Disabled Veterans, New Histories</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/287">Visualizing Blinded Veterans: Negotiating Cultures Of Veteran Disability After The Great War</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/387">Diverse Women, Diverse Paths: Woman Suffrage And Equal Citizenship In Modern America</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Diverse Women, Diverse Paths: Woman Suffrage And Equal Citizenship In Modern America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/30">After Suffrage: Transnational Feminist Networks For Equality</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Diverse Women, Diverse Paths: Woman Suffrage And Equal Citizenship In Modern America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/301">A Place At The Front Ranks: Mary Mcleod Bethune And The Campaign For Voting Rights In The South</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Diverse Women, Diverse Paths: Woman Suffrage And Equal Citizenship In Modern America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/339">Effective Equality: Sophonisba Breckinridges Campaign For Social Justice In Modern America</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/388">Diversifying Historic Sites</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/389">Diversifying The Gilded Age And Progressive Era</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/390">Documenting Indigenous Enslavement In The Americas: A Roundtable Discussion</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/391">Dont Mourn, Organize! Histories Of Resistance, Resilience, And Possibility</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/392">Economic Inequality In American History: Class, Power And Evasion</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/393">Education And Social Inequality In The Long 20th Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Education And Social Inequality In The Long 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/95">Educational Growth And Worker Power In The Early Twentieth Century</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Education And Social Inequality In The Long 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/106">Fiscal Visions Of Education Equality Between Tax Revolts</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Education And Social Inequality In The Long 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/194">Public Finance, State-Sponsored Inequalities, And The Race For Progressive Era Education Reform In Northern California</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Education And Social Inequality In The Long 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/307">Education For Economic Growth: The Political Uses Of Human Capital In The Late 20th Century</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/394">Education And The Politics Of Global Capitalism:   Tracing Imperial Trajectories From The Late 19th Through The Mid-20th Centuries</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Education And The Politics Of Global Capitalism:   Tracing Imperial Trajectories From The Late 19th Through The Mid-20th Centuries</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/159">Modernization, Economic Progress, And Education In Nineteenth-Century Philippines</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Education And The Politics Of Global Capitalism:   Tracing Imperial Trajectories From The Late 19th Through The Mid-20th Centuries</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/177">Overseas U.S. Teachers As Migrant Workers In The Late Nineteenth Centurys Global Imperial System</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Education And The Politics Of Global Capitalism:   Tracing Imperial Trajectories From The Late 19th Through The Mid-20th Centuries</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/218">Schooling For Global Capitalism In The Oldest Colony In The World:  The Puerto Rican Origins Of The Educational War On Poverty</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Education And The Politics Of Global Capitalism:   Tracing Imperial Trajectories From The Late 19th Through The Mid-20th Centuries</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/302">Annexing The World:   Education As National And Imperial Policy In A Competitive Global Economy, 1876–1907</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/395">Encounters With Natives And Nature: Travel Narratives And American Ideologies</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Encounters With Natives And Nature: Travel Narratives And American Ideologies</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/76">Crossing At Panama: Patterns Of Tropical Perception During The Isthmian Transit Period</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Encounters With Natives And Nature: Travel Narratives And American Ideologies</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/80">Danger River: Narrating Adventure Through The Southwestern Canyonlands</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Encounters With Natives And Nature: Travel Narratives And American Ideologies</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/183">Plains, Trains, And Automobiles: Settler Discourse In Travel Writing</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/396">Equality For Whom? Abolition And Radical Isms Of The Nineteenth Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Equality For Whom? Abolition And Radical Isms Of The Nineteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/258">The John Browns Of St. Petersburg: Former Abolitionists And Russian Terrorism In The Late 19th Century</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Equality For Whom? Abolition And Radical Isms Of The Nineteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/312">It Must Be The Ultraisms: John Bell, Conservatism, And Foreign Radicalism, 1852</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Equality For Whom? Abolition And Radical Isms Of The Nineteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/335">Those Who Are Greater Slaves Than Themselves: The Transatlantic Origins Of Anti-Abolitionism In Radical Labor Movement Ideology</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/397">Federal Ways And Means</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/398">Filling The Gaps In The Historic Record</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/399">Food Producers: Popular Perceptions And Food Security From Reconstruction To The Farm Crisis</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/400">Food, Immigration, And Inequality In The 20th Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/401">Forty Years Since Reagan: 1980 As A Turning Point?</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/402">Free, Associated, Unequal: Reframing Puerto Rican Histories Of Struggle</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Free, Associated, Unequal: Reframing Puerto Rican Histories Of Struggle</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/53">Boricua Welfare Rights: Puerto Ricans And The National Welfare Rights Organization After 1966</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Free, Associated, Unequal: Reframing Puerto Rican Histories Of Struggle</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/118">Historiographical Legacies Of Anti-Communism: The Case Of The Proyecto Piloto De Trabajo Con El Pueblo</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Free, Associated, Unequal: Reframing Puerto Rican Histories Of Struggle</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/195">Puerto Rico And The History Of The Carceral State</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/403">From College To High School Classrooms: Closing The Gap In Teaching U.S. History Curriculum</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/404">From Exclusion To Inclusion: U.S. Housing After Federal Redlining</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/405">From Politics To Protest: Charting The New Historiography Of Black Politics In The 1980s And 1990s</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/406">From Slave Traders To Ice: Criminalization, Family Separation, And Extraction As Public Policy</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/407">From The Consent Of The Governed: The State Of (In)Equality For Mexicans, Vietnamese, And The Lgbtq Community In Texas</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>From The Consent Of The Governed: The State Of (In)Equality For Mexicans, Vietnamese, And The Lgbtq Community In Texas</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/14">A Double Home Loss? Last Days Of Little Sài Gòn In Midtown Houston</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>From The Consent Of The Governed: The State Of (In)Equality For Mexicans, Vietnamese, And The Lgbtq Community In Texas</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/174">Operation Documentation: The Quest For Equal Enforcement Of The Public Lewdness Statute</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>From The Consent Of The Governed: The State Of (In)Equality For Mexicans, Vietnamese, And The Lgbtq Community In Texas</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/188">Population Gained And Power Lost: Unequal Mexican Representation In Fort Worth, Texas</a></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/408">From The Picket To The Ticket: The National Park Service Tackles The Complexity Of Woman Suffrage</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/409">Give Me A Break: A Roundtable On Workers, Bathrooms, And Breaks In The U.S. Workplace</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/410">Government Mobilizing Women And Women Mobilizing Government In The Mid-20th Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Government Mobilizing Women And Women Mobilizing Government In The Mid-20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/64">Caring For Empire: Aid To Korea In The 1950s And The Engendering Of American Hegemony</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Government Mobilizing Women And Women Mobilizing Government In The Mid-20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/176">Overgrown Boys And Old Maids: Cold War Debates Over Child Labor, Juvenile Delinquency, And Maternalist Reform</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Government Mobilizing Women And Women Mobilizing Government In The Mid-20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/320">Not As Women But As American Citizens: Presidential Campaigns And Female Voters, 1940–1956</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/411">Higher Education Behind Bars</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/412">Historians And Filmmakers Documenting Resistance</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/413">Historians And Presidential Misconduct</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/414">Historical Perspectives On The Devos Department Of Education</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/415">Historical Research On The National Park Service: Sources And Methodology</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/416">Histories Of Political Economy And The African Diaspora</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Histories Of Political Economy And The African Diaspora</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/62">Capitalism, Slavery, And Patriarchy</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Histories Of Political Economy And The African Diaspora</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/103">Facing The Neocolonial Future: Black Internationalism And Development Politics From Point Four To Volta</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Histories Of Political Economy And The African Diaspora</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/278">Third World Internationalism As Critique Of Racial Capitalism During The Cold War</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/417">History On The Hill: Congress In The 20th Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/418">Homeward Bound: The Mexican State And Attempts To Root Migrants Back In Their Homeland, 1930–1990</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Homeward Bound: The Mexican State And Attempts To Root Migrants Back In Their Homeland, 1930–1990</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/140">Letras Y Ciudadanos: Mexican Migrant Letters To The Mexican Government</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Homeward Bound: The Mexican State And Attempts To Root Migrants Back In Their Homeland, 1930–1990</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/156">Mexicans For Mexico: Populism, Nationalism, And The End Of Migration, 1953–1954</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Homeward Bound: The Mexican State And Attempts To Root Migrants Back In Their Homeland, 1930–1990</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/190">Post-Entry Control: The Mexican State And The Management Of Deportation In The 1970s–1980s</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/419">Hope And Struggle For The Inner City: Race, Crime, And Urban Revitalization In The Metropolis</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Hope And Struggle For The Inner City: Race, Crime, And Urban Revitalization In The Metropolis</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/8">The Most Lasting Bonds: Detroit's Farm-A-Lot Program And The Reconfiguration(S) Of Reproductive Labor Under Deindustrialization</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Hope And Struggle For The Inner City: Race, Crime, And Urban Revitalization In The Metropolis</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/113">Geeking And Freaking: Public Perceptions Of The Women Addicts Of The 1980s Crack Epidemic</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Hope And Struggle For The Inner City: Race, Crime, And Urban Revitalization In The Metropolis</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/215">Safe Streets, Inc.: The Hustle To End Black Gang Violence In Philadelphia, 1969–1976</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/420">Immigration, Antisemitism, And Refugees: Crises Of The American Conscience</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Immigration, Antisemitism, And Refugees: Crises Of The American Conscience</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/163">Nazi Antisemitism On American Campuses</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Immigration, Antisemitism, And Refugees: Crises Of The American Conscience</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/164">New Research On Americas Responses To International Refugee Crises, Then And Now</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Immigration, Antisemitism, And Refugees: Crises Of The American Conscience</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/217">Saving The Professors: American Universities Life-And-Death Decisions Concerning Refugees From Nazi Europe</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/421">In The World But Not Of It: Quakers, War, And Slavery In The Early Modern Anglo-Atlantic World</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>In The World But Not Of It: Quakers, War, And Slavery In The Early Modern Anglo-Atlantic World</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/42">As Witnesses Of God: The Role Of Quaker Spiritual Epistemology In The Fermentation Of Antislavery Thought</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>In The World But Not Of It: Quakers, War, And Slavery In The Early Modern Anglo-Atlantic World</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/298">A Cloak Of Rankist Toryism: Quakers And War In 18th-Century Pennsylvania</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>In The World But Not Of It: Quakers, War, And Slavery In The Early Modern Anglo-Atlantic World</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/309">Good Quakers: The Redwood-Langford Family, Philanthropy, And The Atlantic Slave System</a></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/422">Inaffirmative Action: Diversity, Racism, And Admissions Policies In U.S. Colleges And Universities</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/423">Indigenous International Relations</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/424">Inequality In Early America, Two Decades Later</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/425">Invisible Threads: Maintaining The Social Fabric In The Twentieth-Century United States</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Invisible Threads: Maintaining The Social Fabric In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/9">Watch[Ing] Their Childrens Every Move: Race, Gender And Caretaking During The Era Of Austerity In Baltimore</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Invisible Threads: Maintaining The Social Fabric In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/147">Making Schools Work: Parent Labor In The Desegregation Of Boston Public Schools, 1974–1985</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Invisible Threads: Maintaining The Social Fabric In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/275">The Women Airforce Service Pilots Of World War II: Public Images And Private Realities And The Burdens Of Lasting Progress</a></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/426">Issues Affecting The Profession: How The Oah Can Help</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/427">Lawcha Presidential Address: Rethinking The Boundaries Of Class: Lessons From Transnational Labor History And The Neoliberal University</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/428">Legalizing Race: State Building At The Intersections Of Slavery, Race, And Law In The Long Eighteenth Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Legalizing Race: State Building At The Intersections Of Slavery, Race, And Law In The Long Eighteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/74">Compensating Whiteness: Slave Courts In Colonial British North America</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Legalizing Race: State Building At The Intersections Of Slavery, Race, And Law In The Long Eighteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/173">On The Edge Of Freedom: A Case Study Of Slavery, Space, And Race Along The Pennsylvania Border</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Legalizing Race: State Building At The Intersections Of Slavery, Race, And Law In The Long Eighteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/288">Was Taney Right: Slavery, The Constitution, And The Creation Of U.S. Citizenship</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/429">Leveling The Playing Field? Immersive Historical Role-Playing Games In The College Classroom</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/430">Leveraging Poverty: New Cities, New Partnerships, And The Progressive Abandonment Of Urban Poverty In The 1980s And 1990s</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Leveraging Poverty: New Cities, New Partnerships, And The Progressive Abandonment Of Urban Poverty In The 1980s And 1990s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/7">Take A Stand, Own The Land: Public, Private, And Philanthropic Partners In The Dudley Triangle</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Leveraging Poverty: New Cities, New Partnerships, And The Progressive Abandonment Of Urban Poverty In The 1980s And 1990s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/57">Building Genetown: Biotechnology As An Remedy For Deindustrialization In Eastern Massachusetts</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Leveraging Poverty: New Cities, New Partnerships, And The Progressive Abandonment Of Urban Poverty In The 1980s And 1990s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/99">Embracing The Market And Passing The Buck: New Democrats, Economic Growth, And The Evasive Politics Of Poverty, 1980–1995</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/431">Love, Anarchy, And The Emma Goldman Papers Project</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/432">Loyalties And Identities In Unequal Imperial Landscapes: American-Spanish-Cuban Relations, C. 1890s–1950s</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Loyalties And Identities In Unequal Imperial Landscapes: American-Spanish-Cuban Relations, C. 1890s–1950s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/45">Becoming Pinero: How Americans Went From Colonizer To Neighbor On Cubas Isle Of Pines</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Loyalties And Identities In Unequal Imperial Landscapes: American-Spanish-Cuban Relations, C. 1890s–1950s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/121">Imperial Comradery In The Periphery Of Empire: American-Spanish Relations On The Island Of Cuba, 1898–1909</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Loyalties And Identities In Unequal Imperial Landscapes: American-Spanish-Cuban Relations, C. 1890s–1950s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/162">Navigating Equal Sovereignty: General Calixto García And The Cuban Nation-To-Be</a></td>
+            </tr>
+            <tr>
+              <td>Luncheon</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/433">Luncheon: <I>The Women And Social Movements In The United States,&Nbsp;</I><I>1600</I>–<I>2000&Nbsp;</I></a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Luncheon</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/434">Luncheon: Disappearing Act: Saving Twentieth Century African American Archives: …A Moral And Cultural Imperative</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/435">Making Connections, Bridging Gaps: Linking The Practice Of History In The National Park Service To New Partners And New Scholarship</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/436">Managing Sex In The U.S. Military</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Managing Sex In The U.S. Military</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/56">Brothers In Arms? Combat, Masculinity, And Change In The 21st-Century American Military</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Managing Sex In The U.S. Military</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/192">Problematic Policies &Amp; Far-Reaching Consequences: Historicizing Sexual Violence In The American Military</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Managing Sex In The U.S. Military</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/337">We Recruit Individuals But Retain Families: Managing Marriage And Family In The All-Volunteer Force</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/437">Mariel Boatlift 40 Years Later: Crimmigration In The Era Of Reagans Cold War</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mariel Boatlift 40 Years Later: Crimmigration In The Era Of Reagans Cold War</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/1">Here, A Cuban Is Mud: A Refugee Crisis In Arkansas And The Rise Of Reagan's Detention Regime</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mariel Boatlift 40 Years Later: Crimmigration In The Era Of Reagans Cold War</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/39">Another Cia Operation: The Mariel Boatlift, The U.S. Invasion Of Grenada, And Reagans Schemes Of Deporting Mariel Cubans</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mariel Boatlift 40 Years Later: Crimmigration In The Era Of Reagans Cold War</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/146">Making Migrants Criminal In Miami: The Mariel Boatlift And Immigration Enforcement In The 1980s</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mariel Boatlift 40 Years Later: Crimmigration In The Era Of Reagans Cold War</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/150">Mariel Cuban Refugees And The Longest Prison Takeover In The United States</a></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/438">Media Training With Inside Higher Ed's Scott Jaschik</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Memory And Erasure In Native Histories</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/93">Early Native-Colonial Conflicts In Native American Literary Tradition</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Memory And Erasure In Native Histories</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/292">Where Is The Bonga Family In Immigration History? Recovering An African, Swedish, And Ojibwe Genealogy, 1820s–1860s</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Memory And Erasure In Native Histories</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/324">Restoration, Reclaiming, Remembrance: Asserting Native Voice At The Whitman Mission National Historic Site</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/439">Mexican Consulates And The Negotiation Of Inequality In The Twentieth-Century United States</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mexican Consulates And The Negotiation Of Inequality In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/126">Ineffective Consul: Agricultural Labor Inequalities And Detroits Mexican Consulate, 1942–1964</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mexican Consulates And The Negotiation Of Inequality In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/243">The Carceral Corridor Of The Lower Midwest: Mexican Migrants, Mexican Consulates, And The Negotiation Of Incarceration And Migration Control During The Interwar Years</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mexican Consulates And The Negotiation Of Inequality In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/285">Unlikely Migrants: Mexicans In New York City, 1924–1932</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/440">Midcentury Markets And The Public Reliance On Private Capital</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Midcentury Markets And The Public Reliance On Private Capital</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/54">Borrowing To Build: The School Bond Crisis In Suburban New York</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Midcentury Markets And The Public Reliance On Private Capital</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/135">Land, Capital, And Segregated Suburbs</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Midcentury Markets And The Public Reliance On Private Capital</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/226">Splitting The Atom Of State Finance: New York State Pensions And The Liberal Origins Of Financialization</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/441">Mission Accomplished? The Rise And Fall Of The Education Center At The Wall</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/442">Mortal Measurements: Appraising The Value Of The Dead In The Nineteenth-Century South</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mortal Measurements: Appraising The Value Of The Dead In The Nineteenth-Century South</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/18">A Proclivity Toward The Grave: Mortality, Morbidity, And Lost Cause Fantasies Of Death</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mortal Measurements: Appraising The Value Of The Dead In The Nineteenth-Century South</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/181">Paupers And Lunatics: Inequality In Death As In Life</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Mortal Measurements: Appraising The Value Of The Dead In The Nineteenth-Century South</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/284">Unjust And Unequal: Death Investigations Into Homicides In St. Louis, Missouri, 1875 To 1885</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/443">Music In Times Of Political Crisis: Jazz, Folk, And Classical Music In 1930s America</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Music In Times Of Political Crisis: Jazz, Folk, And Classical Music In 1930s America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/2">Jazz Of The Better Sort: Alain Locke On Jazz And The Maturation Of Black Music</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Music In Times Of Political Crisis: Jazz, Folk, And Classical Music In 1930s America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/227">Staging The Folk: Zora Neale Hurston And The History Of The Female Song Collector</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Music In Times Of Political Crisis: Jazz, Folk, And Classical Music In 1930s America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/257">The Ironies Of Cultural Nationalism In A Transnational Age. Aaron Copland And American Music In The 1930s/40s</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Music, Race, And Resistance</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/52">Bop Apocalypse, Freedom Now! Sex, Race, And Politics In The Cold War Urban Underground</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Music, Race, And Resistance</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/151">Masks Of Dialogue: Mikhail Bakhtin And African American Blues Protest Songs</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Music, Race, And Resistance</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/323">Redneck Chic: Racial Paradox In 1970s Country Music</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/444">Nationalism And Sectionalism In The Early Republic, 200 Years Since The Missouri Crisis</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/445">Native American Histories And Public Memory</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/446">Never Forget: Memorialization And Commemoration At Orangeburg, Kent State, And Jackson State</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/447">New Directions In Latina/O History: Using Religious History To Overcome Inequalities Of The Historical Record</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Directions In Latina/O History: Using Religious History To Overcome Inequalities Of The Historical Record</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/40">Apostles In The Desert: How Mexican Americans Created Catholic Resistance To Repatriation And Deportation, 1929–1939</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Directions In Latina/O History: Using Religious History To Overcome Inequalities Of The Historical Record</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/72">Closing Mexican Parishes: Latina/O Religious Growth In An Era Of Contraction</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Directions In Latina/O History: Using Religious History To Overcome Inequalities Of The Historical Record</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/153">Material Memories Of The Sacred: The Sounds, Sights, And Sites Of Mexican Pentecostal Farmworkers (1930–1966)</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/448">New Histories Of Social Security</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Histories Of Social Security</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/119">How Social Security Shaped Americans Ideas About Generations And The Courses Of Lives</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Histories Of Social Security</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/166">Nine Digits</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Histories Of Social Security</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/294">Writing For Social Security</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/449">New Perspectives On National Park History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Perspectives On National Park History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/105">Fighting For Socio-Spatial Justice: National Park Service And Queer Decolonial (Re)Mapping</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Perspectives On National Park History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/138">Law And Order In The National Parks: Examining The Green Carceral State</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Perspectives On National Park History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/191">Preserving N/Natives: Native Species Restoration And Salvage Anthropology In Hawaii National Park, 1940s–50s</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Perspectives On National Park History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/252">The Dines Application Of The American Antiquities Act Of  Southwestern National Monuments</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/450">New Perspectives On The Archival Recovery Of Black Women's History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Perspectives On The Archival Recovery Of Black Women's History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/101">Everything Left To Prove It: Two-Faced Archives In Black Queer Womens Histories</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Perspectives On The Archival Recovery Of Black Women's History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/133">Keeping House: Patricia Robinsons Home Archives And The Preservation Of The Black Radical Subject</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>New Perspectives On The Archival Recovery Of Black Women's History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/169">Northern Slavery, Gradual Abolition, And The Archive Of Black Women And Families In Pennsylvania</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/451">New Research On Women's Suffrage At The Centennial</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Chat</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/452">Non-Tenure Track Faculty And The Future Of History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/453">Non–Tenure Track Faculty On Teaching: The View From Here</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/454">Nuclear Inequalities In The American Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Nuclear Inequalities In The American Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/75">Crafting A Nuclear Empire: The Making Of The U.S. Pacific Proving Grounds</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Nuclear Inequalities In The American Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/127">Inequality And Uranium Extraction: U.S., Canadian, And Soviet Uranium Miners During The Cold War</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Nuclear Inequalities In The American Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/198">Race, Labour, And The U.S. Nuclear Economy Of The 1980s</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/455">Pacific (Im)Mobilities: Conceptualizing Race, Transportation, And Empire In The Late Nineteenth And Early Twentieth Centuries</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Pacific (Im)Mobilities: Conceptualizing Race, Transportation, And Empire In The Late Nineteenth And Early Twentieth Centuries</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/97">Embodied By Steerage: Asian Migrants, Steamship Travelers, And The Spatial Construction Of Transpacific Mobility</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Pacific (Im)Mobilities: Conceptualizing Race, Transportation, And Empire In The Late Nineteenth And Early Twentieth Centuries</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/108">Fit To Float? Race, Health, And Mobility In The American Pacific</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Pacific (Im)Mobilities: Conceptualizing Race, Transportation, And Empire In The Late Nineteenth And Early Twentieth Centuries</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/120">Imagining A Black Pacific: Empire, Culture, And The Birth Of Afrofuturism</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/456">Perspectives On Inequalities In The Midwest: A Roundtable</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/457">Planning And Facilitating Discourse In The History Classroom</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/458">Policing Social Movements In The Twentieth Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Policing Social Movements In The Twentieth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/170">Occupied Territory And The Making Of The Black Popular Front</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Policing Social Movements In The Twentieth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/185">Police On The Movement: What Cops Said About Civil Rights</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Policing Social Movements In The Twentieth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/209">Repression Of Social Movements At The End Of The Second World War: From Wartime Mobilization To Peacetime Demobilization</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Policing Social Movements In The Twentieth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/282">Tracking Minds, Tracking Lives: The Fbis Past And Present Surveillance Of Black Women Activists</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/459">Popular Music And The Culture Wars</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Popular Music And The Culture Wars</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/55">Bringing People Together: God Bless The U.S.a. And Dreams Of Unity In An Age Of Fracture</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Popular Music And The Culture Wars</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/117">Great White Hopes: Arena Rock Politics In The Age Of Reagan</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Popular Music And The Culture Wars</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/290">Were Not Gonna Take It: The Parents Music Resource Centers Crusade Against Heavy Metal</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Popular Music And The Culture Wars</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/338">We Right Here!: Indigenous Arts And Culture From Red Power To Hip Hop In Detroit</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/460">Producing Intimate Labors: Domesticity, Inequality, And Racial Capitalism</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Producing Intimate Labors: Domesticity, Inequality, And Racial Capitalism</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/110">From Picture Brides To Military Brides: Exclusion And The Intimate Labors Of Asian Women</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Producing Intimate Labors: Domesticity, Inequality, And Racial Capitalism</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/193">Protecting Migrant Domestic Workers, Regulating Intimate Labor: From The Local To The Global</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Producing Intimate Labors: Domesticity, Inequality, And Racial Capitalism</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/235">Supplying Care: Public/Private Collaborations In The Creation Of The Au Pair Program</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Producing Intimate Labors: Domesticity, Inequality, And Racial Capitalism</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/291">Whats Love Got To Do With It? Free Women Of Color, Intimacy, And Labor In Antebellum Louisiana</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/461">Queer Histories Of Washington, D.c.</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Queer Histories Of Washington, D.c.</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/28">Affirming Christianity: Race And Religion In The Gay Liberation Movement, 1968–1981</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Queer Histories Of Washington, D.c.</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/78">D.c.s Dykaries: Phase One—D.c.s Last Dyke Bar (1971–2016)</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Queer Histories Of Washington, D.c.</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/270">The Queer Battle For Capitol Hill: Marines And Violence At D.c. Gay & Lesbian Nightlife</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/462">Queer Public Histories/Queer Public Service</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Queer Public Histories/Queer Public Service</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/46">Black Looks: Documenting Black Queer Voices In The Archive(S)</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Queer Public Histories/Queer Public Service</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/231">Stonewalled: A History Of Lgbtq+ Teacher</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Queer Public Histories/Queer Public Service</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/256">The History Of Legal Challenges To Bans On Transgender Military Personnel</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Queer Public Histories/Queer Public Service</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/259">The Last Security Risk? The Arrest And Resignation Of Lbj Aide Walter Jenkins</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/463">Queering America And The World</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/464">Race And Place: Thinking Through Immigrant (In)Equalities In 1970s Washington, D.c.</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race And Place: Thinking Through Immigrant (In)Equalities In 1970s Washington, D.c.</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/85">Decolonizing History: Late C. L. R. James In Home Rule–Era Washington, D.c.</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race And Place: Thinking Through Immigrant (In)Equalities In 1970s Washington, D.c.</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/316">Long Live A Sovereign And Self-Sufficient Iran: Lafayette Park And Bethesda, Maryland, As Sites Of Iranian Diasporic Racialization And Resistance, 1978–1988</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race And Place: Thinking Through Immigrant (In)Equalities In 1970s Washington, D.c.</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/326">The Asian Great Gatsby In The Capital: Tong-Sun Park, The Korean Central Intelligence Agency, And The Geopolitics Of Ethnic Lobbying In 1970s Washington, D.c.</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/465">Race In Sports History; Race In American History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/466">Race, Law, And Authority In The Gilded Age And Progressive Era United States</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Law, And Authority In The Gilded Age And Progressive Era United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/207">Remembering Refugees: Memory, Law, And The Inequalities Of Refugee Recognition In U.S. History</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Law, And Authority In The Gilded Age And Progressive Era United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/236">Surveilling Unworthy Brokers: Federal Agencies, White Lawyers For The Minorities, And The Search For Racial Management, 1873–1924</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Law, And Authority In The Gilded Age And Progressive Era United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/329">The Partition Wall Between Him And Slavery: African American Lawyers Anti-Lynching And Anti-Disenfranchisement Activism In Maryland</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/467">Race, Recreation, And The National Park Service In The Mid-20th Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Recreation, And The National Park Service In The Mid-20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/27">Advocates For Change: The Department Of Interior Solicitor's Office And The Desegregation Of The National Parks</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Recreation, And The National Park Service In The Mid-20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/137">Laurance S. Rockefeller And The Outdoor Recreation Resources Review Commission, 1958–1962</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Recreation, And The National Park Service In The Mid-20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/233">Summer In The Parks: Nps Responds To Urban Unrest, 1968–1976</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/468">Race, Religion, And Inequality In The Twentieth-Century United States</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Religion, And Inequality In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/59">Bureau Clergymen</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Religion, And Inequality In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/317">Los Hijos De Juan Y Carlos Wesley: Mexican-American Methodism In 1950s San Antonio, Racial And Economic Inequality, And The Politics Of Assimilation</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Religion, And Inequality In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/318">Loving Them Into Understanding: Nelle Morton, White Anti-Racism, And Economic Justice In The Post–World War II South</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Race, Religion, And Inequality In The Twentieth-Century United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/334">Their Religion Can Be Defined As Black Man: The Nation Of Islams Message Of Black Masculinity, 1931–1958</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/469">Racial Formations Within Social Movements: Forging Solidarities And Complicities</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Racial Formations Within Social Movements: Forging Solidarities And Complicities</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/160">More Than Radicals Or Junkies: Blacks, Latinos, And The Pursuit Of Psycho-Political Liberation</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Racial Formations Within Social Movements: Forging Solidarities And Complicities</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/224">Soldiers Of The Soil: On The Filipino History Of The United Farm Worker Movement</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/470">Racial Rogues Of Hollywood: Challenges To Latinx And Asian American Inequalities In Early Twentieth-Century Media</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Racial Rogues Of Hollywood: Challenges To Latinx And Asian American Inequalities In Early Twentieth-Century Media</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/10">(In) Equalities: Anna May Wong And Walter Benjamin, Berlin 1928</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Racial Rogues Of Hollywood: Challenges To Latinx And Asian American Inequalities In Early Twentieth-Century Media</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/182">Performing Race, Class, And Sexuality In Depression-Era Latinx Los Angeles: An Examination Of Ramón Novarros 1936 Film Contra La Corriente</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Racial Rogues Of Hollywood: Challenges To Latinx And Asian American Inequalities In Early Twentieth-Century Media</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/297">Zorro Defends The Status Quo: Disneys Ambivalent Hero In The Civil Rights Era</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/471">Racism, Repression, And The Freedom Struggle: Memphis After 1968</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Racism, Repression, And The Freedom Struggle: Memphis After 1968</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/48">Black Power, Black Youth, And Black Soul: Memphis, Stax Soul, And Black Youth Activism</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Racism, Repression, And The Freedom Struggle: Memphis After 1968</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/155">Memphis Since King</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Racism, Repression, And The Freedom Struggle: Memphis After 1968</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/264">The Memphis Red Squad And The Assault On The Movement, 1968–1976</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/472">Radicalism, Reform, And The Terrain Of A New Chicanx Political History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Radicalism, Reform, And The Terrain Of A New Chicanx Political History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/67">Chicana Militant Dignity Politics: Building Coalitions And Political Solidarity In The Los Angeles Welfare Rights Movement</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Radicalism, Reform, And The Terrain Of A New Chicanx Political History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/68">Chicana/O Communists And Jesse Jacksons Presidential Campaigns And The Rainbow Coalition, 1983–1988</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Radicalism, Reform, And The Terrain Of A New Chicanx Political History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/263">The Makings Of Representative Justice: Chicanas And The Democratic Party</a></td>
+            </tr>
+            <tr>
+              <td>State of the Field</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/473">Re-Considering The 1965 Immigration Act</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/474">Reclaiming Our Time When There Is None: Navigating Inequalities To Publish And Flourish In The Academy</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Offsite Session</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/475">Reconstruction And Public History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/476">Reflecting On The 20th Anniversary Of The Publication Of <I>Harvest Of Empire</I> By Juan González</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/477">Religion And The Influence Of Intellectual Networks: Interpretation And Operationalization Of Ideas In The Nineteenth Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Religion And The Influence Of Intellectual Networks: Interpretation And Operationalization Of Ideas In The Nineteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/58">Building Our Empire At Home And Abroad: The Global Imperialism Of Nineteenth-Century Immigrants To The Midwest</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Religion And The Influence Of Intellectual Networks: Interpretation And Operationalization Of Ideas In The Nineteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/141">Liberal Religions International Networks And The Tensions Of A Globally-Conscious American Exceptionalism</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Religion And The Influence Of Intellectual Networks: Interpretation And Operationalization Of Ideas In The Nineteenth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/296">Youth Networks In Early Nineteenth-Century American Religious Culture: Employing Age As A Category Of Analysis For Religious And Intellectual Histories</a></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/478">Revisioning American History For Young People</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/479">Revisiting The Nuremberg Trial 75 Years Later: A Roundtable Discussion</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>State of the Field</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/480">Revisiting Whiteness In An Age Of Trump</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/481">Road To The White House: Presidential Campaigns, 1900 To Today</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/482">Roundtable On Empire And Women's Suffrage In The United States: New Pedagogical Approaches</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/483">Roundtable: Busting Up Hard Hats: How Race, Gender And Nationality Shaped The U.S. Working Class</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/484">Roundtable: Mentoring History Faculty And Graduate Students Of Color&Nbsp;</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/485">Sanctuary: Defending The Vulnerable And Challenging The State From The Nineteenth Century Until The Present</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Sanctuary: Defending The Vulnerable And Challenging The State From The Nineteenth Century Until The Present</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/11">(Whip)Lash Of Immigration Enforcement:  Family Detention, Separation, And Detention Again</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Sanctuary: Defending The Vulnerable And Challenging The State From The Nineteenth Century Until The Present</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/13">A Conjectural History Of Sanctuary</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Sanctuary: Defending The Vulnerable And Challenging The State From The Nineteenth Century Until The Present</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/21">A Sanctuary Or A Shield? American Universities And Foreign-Born Students, 1966–1986</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Sanctuary: Defending The Vulnerable And Challenging The State From The Nineteenth Century Until The Present</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/311">History Will Hold Us Accountable: Counter-Revolution In Central America And The Reagan Administrations Campaign Against The Sanctuary Movement</a></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/486">Searching For The Sustainable History Monograph—A New Publishing Pilot</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/487">Sexual Healing? Race, Religion, And Purity In The 20th Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Sexual Healing? Race, Religion, And Purity In The 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/143">Living Right: Black Womens Pursuits Of Purity In A Digital Age</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Sexual Healing? Race, Religion, And Purity In The 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/157">Missionary Positions: How American Evangelicals Learned To Love Global Aids Relief</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Sexual Healing? Race, Religion, And Purity In The 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/214">Sacrality And Purity In The Mid-Century Push For Contraception</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/488">Slavery, Freedom, And Family Networks: New Approaches And Methods</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Slavery, Freedom, And Family Networks: New Approaches And Methods</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/123">In The Shadow Of The Capitol: Slavery, Violence, And The Law In Early Washington, D.c.</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Slavery, Freedom, And Family Networks: New Approaches And Methods</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/124">Individual Stories, Larger Understanding: Digital Representation Of The Enslaved Community Owned And Sold By The Maryland Province Jesuits</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Slavery, Freedom, And Family Networks: New Approaches And Methods</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/241">The Black Family And The Archive During Slavery's Waning Days In The Pennsylvania Interior</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/489">Social Movements And Progressive Inequalities, 1850–1930</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Social Movements And Progressive Inequalities, 1850–1930</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/4">She Was Treated For Some Time As A Dangerous Person: Ellen Swallow Richards And Coeducation At Massachusetts Institute Of Technology</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Social Movements And Progressive Inequalities, 1850–1930</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/34">All Women Are Not Created Equal: Inequality Within The Nineteenth-Century Dress Reform Movement</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Social Movements And Progressive Inequalities, 1850–1930</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/44">Bad Women Will Be Disenfranchised: How Suffragists Discussed Prostitutes And Black Women As Prospective Female Voters</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/490">Standards And Power, At Home And Abroad</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Standards And Power, At Home And Abroad</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/228">Standard Parts: The Death Of Fordism And The Rise Of Flexible Production</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Standards And Power, At Home And Abroad</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/229">Standardizing Infrastructure In The Era Of The Open Door And Dollar Diplomacy</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Standards And Power, At Home And Abroad</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/261">The Limits Of My Standards Are The Limits Of My World: World War II And The Birth Of A Global Material Culture</a></td>
+            </tr>
+            <tr>
+              <td>State of the Field</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/491">State Of The Field: Slavery And The Law</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/492">State Repression In The Black Power Era</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>State Repression In The Black Power Era</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/172">Of Judges, Agents, And The Citizenry: Repressing George Crockett Jr.</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>State Repression In The Black Power Era</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/206">Reflections On Counter-Revolution And Repression</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>State Repression In The Black Power Era</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/230">State Repression Of The Nation Of Islam In Rochester, Ny, And Beyond</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>State Repression In The Black Power Era</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/293">Who Killed Ralph Featherstone? State Repression, Media Complicity, And The Neutralization Of The Black Left</a></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/493">State Violence And The Problem Of Race: The Shootings At Kent State And Jackson State 50 Years After</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/494">State, Society, And Correcting The Body</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>State, Society, And Correcting The Body</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/24">Accessing Healthcare: Women In Rhode Island, 1870–1920</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>State, Society, And Correcting The Body</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/33">Alabama Values: The 1935 Dominick Sterilization Bill And Southern Resistance To Eugenics</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>State, Society, And Correcting The Body</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/66">Chewing The Fat: Women And Size In Modern America</a></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/495">Still <I>In The Shadow Of War?</I> Reflections On The Twenty-Fifth Anniversary Of A Classic</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/496">Still Indian Country: The Indigenous Northern Plains In The Twentieth Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Still Indian Country: The Indigenous Northern Plains In The Twentieth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/79">Dakota Wicohan: Indigenous Cradleboards As Material Culture And History</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Still Indian Country: The Indigenous Northern Plains In The Twentieth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/204">Reclaiming Noaha-Vose (Bear Butte): Cheyenne Resistance To Settler Colonialism In A Sacred Place</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Still Indian Country: The Indigenous Northern Plains In The Twentieth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/244">The Catholic Sioux Congress Of 1910 And Indigenous Mobility In The Northern Plains</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Still Indian Country: The Indigenous Northern Plains In The Twentieth Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/286">Urban Indian Country: Segregation And Disaster In Twentieth-Century Rapid City</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/497">Strategies Of Remembrance And Redress: The Evolution Of African American Memory Politics Since The 1980s</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Strategies Of Remembrance And Redress: The Evolution Of African American Memory Politics Since The 1980s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/128">Integration/Desegregation Of Racial Memories In The Post–Civil Rights Movement Era</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Strategies Of Remembrance And Redress: The Evolution Of African American Memory Politics Since The 1980s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/154">Memorialization Of Lynching In The South: Emmett Till, The Legacy Museum, And The Lynching Monument</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Strategies Of Remembrance And Redress: The Evolution Of African American Memory Politics Since The 1980s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/211">Rethinking Redress: African American Perspectives On The Japanese American Reparations Movement</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/541">Streets Are For People Too!: Community, Infrastructure, And Contested Spaces In 20th-Century America</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Streets Are For People Too!: Community, Infrastructure, And Contested Spaces In 20th-Century America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/202">Real Estate And Risk: Telephone Buildings In The Age Of The Urban Crisis </a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Streets Are For People Too!: Community, Infrastructure, And Contested Spaces In 20th-Century America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/250">The Cost Of Air Travel: Cleveland Hopkins Airport And The West Park Neighborhood</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Streets Are For People Too!: Community, Infrastructure, And Contested Spaces In 20th-Century America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/254">The Elderly Navigating New York City: Old Age, Public Health, And The Politics Of The Urban Street, 1920–Present</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Streets Are For People Too!: Community, Infrastructure, And Contested Spaces In 20th-Century America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/271">The Road To Nowhere: The Politicization Of Rural Road Improvement, 1890–1920</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/498">Structural Racism And Isolation In Academia, 1970–2020</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Structural Racism And Isolation In Academia, 1970–2020</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/168">No Work For Black Phd Women</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Structural Racism And Isolation In Academia, 1970–2020</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/253">The Double Consciousness Of A Beautiful Soul In Higher Education</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Structural Racism And Isolation In Academia, 1970–2020</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/314">Just Because Your Husband Or Dad Has A Ph.d., We Have To Give You A Ph.d: An Indian Womans Journey Towards The Ph.d.</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/499">Subjectivizing Madness: Bodies, Senses, And Experiences In The Long History Of The Asylum</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Subjectivizing Madness: Bodies, Senses, And Experiences In The Long History Of The Asylum</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/145">Madness, Materiality, Coloniality</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Subjectivizing Madness: Bodies, Senses, And Experiences In The Long History Of The Asylum</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/161">Motherhood, Profession, And Disability In 1940s Child Psychiatry</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Subjectivizing Madness: Bodies, Senses, And Experiences In The Long History Of The Asylum</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/305">Colored And Crazed: Blackface Minstrelsy And Identity Crossing In The New York State Lunatic Asylum</a></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/500">Teaching About Civic Action And Social Change With Primary Sources From The Library Of Congress</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/501">Teaching Difficult Racial Histories In Post–Civil Rights America</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Teaching Difficult Racial Histories In Post–Civil Rights America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/96">Educational Inequality And Native Americans: The Historical Development Of Standards For Teaching Native American History</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Teaching Difficult Racial Histories In Post–Civil Rights America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/213">Role-Playing, Poverty, And Race In The Simulation Games Ghetto And Blacks & Whites</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Teaching Difficult Racial Histories In Post–Civil Rights America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/237">Teaching Students To Critically Evaluate How Slavery Is Taught</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/502">Teaching Famous Trials</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/503">Teaching Hard History: Preparing Students To Teach About American Slavery</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/504">Teaching History In The Stem Era</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/505">Teaching Inclusively: An Interactive Workshop</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/506">Teaching Peoples History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/507">The Contested Use Of Force: Violence, Theft, And Property Destruction In Political And Economic Struggle</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Contested Use Of Force: Violence, Theft, And Property Destruction In Political And Economic Struggle</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/77">Cut-Throat: Chiselers, Racketeers, And The Collapse Of The Northeastern Garment Industry</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Contested Use Of Force: Violence, Theft, And Property Destruction In Political And Economic Struggle</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/167">No Interests In Common: Sabotage As Structural Critique</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Contested Use Of Force: Violence, Theft, And Property Destruction In Political And Economic Struggle</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/187">Political Economy Of The Southern Mind: Rethinking W. J. Cash</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Contested Use Of Force: Violence, Theft, And Property Destruction In Political And Economic Struggle</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/308">Gold Belongs To Him Who Finds It: Theft, Property Rights, And Nevadas High-Grading Controversy, 1905–1907</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/508">The Emergence Of Immigration Specialists: Ideas About Inclusion And Exclusion Of Immigrants In The Early To Mid-20th Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Emergence Of Immigration Specialists: Ideas About Inclusion And Exclusion Of Immigrants In The Early To Mid-20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/132">Keepers Of Concentration Camps? Federal Agents Who Administered Japanese Americans During World War II</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Emergence Of Immigration Specialists: Ideas About Inclusion And Exclusion Of Immigrants In The Early To Mid-20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/208">Representation Of Immigrants And Their Gender Roles: Emily Greene Balch And Her Social Work In The Early 20th-Century United States</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Emergence Of Immigration Specialists: Ideas About Inclusion And Exclusion Of Immigrants In The Early To Mid-20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/281">Towards A More Equal Immigration Policy: Prewar Origins Of Post–World War II Liberal Coalition And Immigration Reform</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/509">The Fractured State: U.S. Responsibilities At Home And Abroad In The 1970s</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Fractured State: U.S. Responsibilities At Home And Abroad In The 1970s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/98">Embracing Failure: New York's Fiscal Crisis And The Reorientation Of City Government</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Fractured State: U.S. Responsibilities At Home And Abroad In The 1970s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/247">The Citizen-Soldier Must Die: Inventing The Ethical Case For The All-Volunteer Force In The 1970s U.S.</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Fractured State: U.S. Responsibilities At Home And Abroad In The 1970s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/330">The Postwar Period Has Ended: Nation Building And The Fractured State</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/510">The Fruit Of Ones Labor? Work, Race, And Ability In The History Of U.S. Capitalism Around 1900</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Fruit Of Ones Labor? Work, Race, And Ability In The History Of U.S. Capitalism Around 1900</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/83">Debtors Bodies: Sharecropping And Proprietorship At The End Of The Nineteenth Century In The South</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Fruit Of Ones Labor? Work, Race, And Ability In The History Of U.S. Capitalism Around 1900</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/249">The Color Of Working Hours: Historicizing Race, Time, And Ableism In Interwar Fordist Labor Economies</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Fruit Of Ones Labor? Work, Race, And Ability In The History Of U.S. Capitalism Around 1900</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/315">Let Nothing Divert You From The Duty To Your Body: Walt Whitmans Advice On Manliness</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Fruit Of Ones Labor? Work, Race, And Ability In The History Of U.S. Capitalism Around 1900</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/332">The True Wealth Of Nations Is The Health Of Its Individuals: The Body Politics Of Early Human Capital Theory</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/511">The History Of The National Council Of Churches And Religious Progressivism</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The History Of The National Council Of Churches And Religious Progressivism</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/35">American Ecumenicals And The Un</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The History Of The National Council Of Churches And Religious Progressivism</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/84">Deciding Not To Decide: The Metropolitan Community Church,  The National Council Of Churches, And Competing Visions Of Liberal Christianity</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The History Of The National Council Of Churches And Religious Progressivism</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/94">Early Sex Education And The Federal Council Of Churches</a></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/512">The Oped Projects Write To Change The World</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Film Screening</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/513">The Ordinance Project</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/514">The Other Border: Canadas Place In U.S. History, From The Revolution To Reconstruction</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/522">The Other Illegals: Unauthorized European Immigration To The United States In The 20th Century</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Other Illegals: Unauthorized European Immigration To The United States In The 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/87">Defining The Illegal European And Protesting Immigration Quotas In The Midwest</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Other Illegals: Unauthorized European Immigration To The United States In The 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/139">Legalize The Irish: How Undocumented Irish Immigrants Lobbied For Legal Status In The 1980s</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Other Illegals: Unauthorized European Immigration To The United States In The 20th Century</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/268">The Privileges Of Illegality: Unauthorized Italian Immigration To The United States And Adjustment Of Status In The Twentieth Century</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/515">The Politics Of Aids In The 1980s And 1990s</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Politics Of Aids In The 1980s And 1990s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/171">Of Childbearing Age: Aids, Reproduction, And The Reagan Administration, 1981–1989</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Politics Of Aids In The 1980s And 1990s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/197">Queering The Welfare Queen: Daniel Patrick Moynihan, The Democratic Party, And The Hiv/Aids Crisis In The 1980s</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Politics Of Aids In The 1980s And 1990s</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/267">The Plague And The Presidents: Aids Avoidance By Reagan, Bush, And Clinton</a></td>
+            </tr>
+            <tr>
+              <td>State of the Field</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/516">The Postwar Period Turns 75: A State Of The Field</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/517">The Punitive Turn From Below: Grassroots Histories Of The Carceral Era</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Punitive Turn From Below: Grassroots Histories Of The Carceral Era</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/12">A Case For Local Histories Of The High School Student Organizing Tradition And Its Responses To The Punitive Turn, 1968–1973</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Punitive Turn From Below: Grassroots Histories Of The Carceral Era</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/43">Bad Queers: Lgbt People And The Carceral State In Modern America</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Punitive Turn From Below: Grassroots Histories Of The Carceral Era</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/90">Detroit Under Stress: The Campaign To Stop Police Killings In The Early 1970s</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Punitive Turn From Below: Grassroots Histories Of The Carceral Era</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/295">Young Boys: A Cohort Biography Of Detroits Informal Economy During The Carceral Era</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/518">The Question Of Black Politics In The Antebellum United States</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Question Of Black Politics In The Antebellum United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/47">Black Power In Antebellum America: The New Bedford Example</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Question Of Black Politics In The Antebellum United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/260">The Life And Times Of Reuben Ruby, From Community Leader To National Activist</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>The Question Of Black Politics In The Antebellum United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/269">The Problem Of Black Citizenship</a></td>
+            </tr>
+            <tr>
+              <td>Advance Text Session (Gerstle-Style)</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/519">The Rise And Fall Of Americas Neoliberal Order</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Plenary Session</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/520">The Trouble With Voting</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/521">The U.S. In Global Economic Histories</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/523">Traces Of Monarchy In Early U.S. Political Culture</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Traces Of Monarchy In Early U.S. Political Culture</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/41">Aristocratic Education In The Early Republic</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Traces Of Monarchy In Early U.S. Political Culture</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/111">From Rebellious Subjects To Obedient Citizens: The Contested Rights Of Protest In The Founding Era</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Traces Of Monarchy In Early U.S. Political Culture</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/116">Great Lakes Indians, Monarchical Rituals, And The Making Of The U.S. Government</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Traces Of Monarchy In Early U.S. Political Culture</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/333">The Unpopular Cause Of Anglomany Is Openly Laying Claim To Him: The Presidents Cabinet, The American Public, And The Long Shadow Of The British Monarchy</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/524">Trans-Pacific Inequalities</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/525">Trouble In Trucking Country: Truck Drivers And Their Histories</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Trouble In Trucking Country: Truck Drivers And Their Histories</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/50">Black Smoke Matters</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Trouble In Trucking Country: Truck Drivers And Their Histories</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/219">Searching For Jimmy Hoffa:  Truckers And The Precursor To The Trump Phenomenon</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Trouble In Trucking Country: Truck Drivers And Their Histories</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/272">The Robots Are Coming! Again!</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/526">Understanding And Teaching The Civil Rights Movement: New Directions In Civil Rights Pedagogy</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/527">Veterans Oral History Projects: Nuanced Methodological And Pedagogical Approaches To Recovering Our Nations Past</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/528">Was America Ever Great? Challenging The Nostalgia Trap In Politics, Popular Culture, And Historiography</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Was America Ever Great? Challenging The Nostalgia Trap In Politics, Popular Culture, And Historiography</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/89">Detroit Autoworkers And The Elusive Postwar Boom</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Was America Ever Great? Challenging The Nostalgia Trap In Politics, Popular Culture, And Historiography</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/255">The Freedom Of Work Or How We Learned To Stop Worrying And Became Commodities</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Was America Ever Great? Challenging The Nostalgia Trap In Politics, Popular Culture, And Historiography</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/277">Theodore Roosevelt, The Rise Of The Open-Shop Movement, And The Myth Of The Square Deal</a></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/529">Weaponizing Natural Disaster: Citizenship And Race In The Aftermath Of Hurricane Maria</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/530">Wellness, Bodies, And Selfhood In The Modern United States</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Wellness, Bodies, And Selfhood In The Modern United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/107">Fit Bodies: Black Womens Exercise And Public Health In The Early Twentieth Century</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Wellness, Bodies, And Selfhood In The Modern United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/115">Good Adjustment? Negotiating Postpartum Depression In The Womens Health Movement</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Wellness, Bodies, And Selfhood In The Modern United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/130">Its Not Working Out: Fitness And Inequality In The 21st Century</a></td>
+            </tr>
+            <tr>
+              <td>Panel Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/531">Were History: The Process Of Making Scholarly History Available To All</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/532">What Happened To The Republican Party?</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/533">What Is The Long 19th Amendment?</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/534">Where Are The Women? Promoting Inclusion In Survey History Courses</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/535">Whistleblowing, Leaking, And The Challenge Of Disclosure: New Directions In The History Of National Security Secrecy</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Roundtable Discussion</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/536">Whose Anniversary? 2020, The Mayflower Pilgrims, And The Impacts Of English Settlement</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women And Power In Early Native North America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/19">A Question Of Power: Gender And Imperialism In Illinois Country</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women And Power In Early Native North America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/63">Captivity, Gender, And The Politics Of Reproduction In Seventeenth-Century New England</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women And Power In Early Native North America</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/104">Fausta & Sarafina: Indigenous Women In Positions Of Power In The California Missions</a></td>
+            </tr>
+            <tr>
+              <td>Paper Presentation</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/537">Women And Public Space In The Urban United States</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women And Public Space In The Urban United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/15">A Fairyland Of Fine Mexican Food: The Mitla Café, Mexican Women, And Cultural Expression Along Route 66</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women And Public Space In The Urban United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/149">Mapping The Suffrage Metropolis</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women And Public Space In The Urban United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/306">Constant Riot And Effervescence: Chicagos Intimate Economy, 1871–1909</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women And Public Space In The Urban United States</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/319">Most Girls Want Boys To Whistle At Them!: Normalizing Street Harassment In The United States, 1930–1945</a></td>
+            </tr>
+            <tr>
+              <td>Lightning Rounds</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/538">Women Scholars On The Rise: Emerging Research In American History</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/60">Californiana Legacies: Navigating Family And Popular Memories In Californias Borderlands</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/102">Exploring The Entwined Impulses Of Spirituality, Psychology, And Radical Politics Through The Firestone Sisters And Demita Frazier</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/216">Salvage Tourism: Performing Indigeneity In Historical Pageants And Outdoor Dramas</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/223">Small Finds, Big Lives: Daily Life And Labor Of Bondpeople In Urban Antebellum America</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/266">The New Age Lynching: Police Brutality And Its Effects On Communities Of Color In The United States</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/274">The Silver Women: Gender, Race, And Empire At The Panama Canal, 1904–1914</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/283">Trading Silk For Khaki: The Womens Army Corps And The Contest Over Soldier Womanhood, 1963–1978</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/289">We Work To Bloom: Black Womens Intellectual And Economic Activism In Postwar Milwaukee</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/310">Great Influence On My Mind: The Impact Of Literacy On Armed Enslaved Insurrections</a></td>
+            </tr>
+            <tr>
+              <td>Paper</td>
+              <td>Women Scholars On The Rise: Emerging Research In American History</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/325">Tell Ya Mama To Surrender: Gender, Revolution, And Development In Nicaragua, 1972–1995</a></td>
+            </tr>
+            <tr>
+              <td>Luncheon</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/539">Womens Committee Luncheon—Historiography And Presumed Incompetent: Women In Academia And Beyond</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Workshop</td>
+              <td><a href="https://humanitiesdata.org/viz/oah2020/#/doc/540">Writing History—A Lab Session</a></td>
+              <td></td>
+            </tr>
+
+        </tbody>
+      </table>
+  </div>
+
+  <div id="word_view" class="hidden">
+    <div class="row">
+      <div class="col-md-8">
+        <div id="word_view_help">
+          <p class="help">Choose a specific word to view from
+          <a class="external" href="#/words">the list of all words</a> or from
+            <a class="external" href="#/topic">a topic page</a>.</p>
+          <p class="help hidden" id="last_word_help">Below: the last-viewed word. Stable link to this page: <a class="external" id="last_word" href="#/word"></a></p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <form id="word_view_form" class="form-inline pull-right" role="form">
+          <div class="form-group">
+            <label class="sr-only" for="word_input">Choose a word:</label>
+            <input type="text" class="form-control" id="word_input" placeholder="Enter a word">
+          </div>
+          <button type="submit" class="btn btn-default">List topics</button>
+        </form>
+      </div>
+    </div>
+    <div id="word_view_main" class="row">
+      <div class="col-md-12">
+        <h2 id="word_header">Prominent topics for <span class="word"></span></h2>
+        <div id="word_view_explainer">
+          <p class="help">Click row labels to go to the corresponding topic page; click a word to show the topic list for that word.</p>
+        </div>
+        <div class="alert alert-info none hidden">
+          <p>There are no topics in which this word is prominent.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="words_view" class="hidden">
+    <h2>All words prominent in any topic</h2>
+    <p class="help">Words not prominent in any topic are not listed</p>
+    <ul id="vocab_list" class="list-unstyled"></ul>
+  </div>
+
+
+</div> <!-- #view -->
+</div> <!-- .row -->
+</div> <!-- .container -->
+
+
+<script type="text/javascript" src="../../lib/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="../../lib/bootstrap.min.js"></script>
+<script type="text/javascript" src="../../lib/jszip.min.js"></script>
+
+<script type="text/javascript" src="../../js/utils.min.js"></script>
+<script type="text/javascript" src="../../js/dfb.min.js"></script>
+
+<script type="text/javascript">
+  $(window).on('load',function(){
+      $('#getting_started_modal').modal('show');
+  });
+  main();
+</script>
+
+</body>
+
+
+</html>

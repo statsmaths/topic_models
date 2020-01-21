@@ -2,7 +2,7 @@ library(mallet)
 library(rJava)
 library(readr)
 library(cleanNLP)
-library(readxl)
+library(xlsx)
 library(stringi)
 library(dplyr)
 library(topicmodels)
@@ -21,8 +21,8 @@ filter_list <- c(LETTERS, letters, "^", "_", "\\", "paper", "part",
 filter_list <- data_frame(lemma = filter_list)
 
 # PREPARE PROPOSAL DATA
-prop <- read_excel("~/Desktop/OAH20 Proposals_12.6.2019.xlsx")
-names(prop) <- stri_replace_all(names(prop), ".", fixed=" ")
+prop <- xlsx::read.xlsx("oah_data/2018 AM Proposal Data_10.11.2017.xlsx",
+                        sheetIndex = 1, , stringsAsFactors = FALSE)
 prop <- prop[nchar(as.character(prop$Proposal.Abstract)) > 100,]
 prop <- prop[!is.na(nchar(as.character(prop$Proposal.Abstract))),]
 prop$Participant.Title[is.na(prop$Participant.Title)] <- ""
@@ -56,8 +56,8 @@ prop <- prop[!duplicated(prop$Proposal.Abstract),]
 prop <- prop[!duplicated(prop$Proposal.Title),]
 
 # PREPARE PAPER DATA
-paper <- read_excel("~/Desktop/OAH20 Papers_12.6.2019.xlsx")
-names(paper) <- stri_replace_all(names(paper), ".", fixed=" ")
+paper <- xlsx::read.xlsx("oah_data/2018 AM Paper Data _10.11.2017.xlsx",
+                         sheetIndex = 1, stringsAsFactors = FALSE)
 paper <- paper[nchar(as.character(paper$Paper.Abstract)) > 100,]
 paper <- paper[!is.na(nchar(as.character(paper$Paper.Abstract))),]
 paper <- paper[!duplicated(paper$Paper.Abstract),]
@@ -149,27 +149,27 @@ data$desc <- sprintf("<h5><i>%s</i></h5><p><h5><b>Date:</b> %s</h5></p><p><h5><b
                     data$author, data$date, data$time, data$type, data$session_text, data$text)
 
 # PARSE WITH SPACY
-cnlp_init_spacy()
+init_spaCy(model_name = "en_core_web_sm")
 
-anno <- cnlp_annotate(text)
+anno <- run_annotators(text, as_strings = TRUE)
 
-toks <- anno$token
+toks <- get_token(anno)
 toks <- anti_join(toks, filter_list, by = c("lemma" = "lemma"))
-toks <- anti_join(toks, filter_list, by = c("token" = "lemma"))
-toks <- filter(toks, upos %in% c("NOUN", "VERB"))
-toks <- split(toks, toks$doc_id)
+toks <- anti_join(toks, filter_list, by = c("word" = "lemma"))
+toks <- filter(toks, upos %in% c("NOUN"))
+toks <- split(toks, toks$id)
 toks <- lapply(toks, getElement, "lemma")
 toks <- as.character(unlist(lapply(toks, paste, collapse = " ")))
 
 mallet_obj <- learn_topics_oah(toks, ntopics = 14, seed = 7)
 
 # BUILD WEBSITE
-build_webpage("oah2020", mallet_obj, data$desc, data$title)
+build_webpage("oah12", mallet_obj, data$desc, data$title)
 
 # BUILD INDEX PAGE
 library(stringi)
 
-x <- readLines("models/oah2020/data/meta.csv")
+x <- readLines("models/oah12/data/meta.csv")
 title <- stri_sub(x, stri_locate(x, fixed = ",\"")[,1] + 2, -1)
 type <- stri_sub(sapply(stri_split(x, fixed = "<p>"), getElement, 4), 18, -10)
 prop_title <- sapply(stri_split(x, fixed = "<p>"), getElement, 5)
@@ -184,10 +184,10 @@ id <- which(title == "")
 base_string <- "
             <tr>
               <td>%s</td>
-              <td><a href=\"https://humanitiesdata.org/oah2020/#/doc/%d\">%s</a></td>
+              <td><a href=\"https://humanitiesdata.org/oah2018/#/doc/%d\">%s</a></td>
               <td></td>
             </tr>"
-out1 <- sprintf(base_string, type, seq_along(type) - 1, prop_title)[id]
+out1 <- sprintf(base_string, type, 0:492, prop_title)[id]
 sby <- prop_title[id]
 
 id <- which(title != "")
@@ -195,9 +195,9 @@ base_string <- "
             <tr>
               <td>%s</td>
               <td>%s</td>
-              <td><a href=\"https://humanitiesdata.org/oah2020/#/doc/%d\">%s</a></td>
+              <td><a href=\"https://humanitiesdata.org/oah2018/#/doc/%d\">%s</a></td>
             </tr>"
-out2 <- sprintf(base_string, type, prop_title, seq_along(type) - 1, title)[id]
+out2 <- sprintf(base_string, type, prop_title, 0:492, title)[id]
 sby <- c(sby, prop_title[id])
 
 out <- c(out1, out2)

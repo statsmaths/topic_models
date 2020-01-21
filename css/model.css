@@ -316,11 +316,11 @@ text.topic_name.merged_topic_sep {
 
 .topic_cloud {
     fill: rgba(240,240,240,0.6);
-    stroke: rgba(200,200,200,0.6); 
+    stroke: rgba(200,200,200,0.6);
 }
 
 .topic_cloud:hover {
-    fill: rgba(105,173,201,0.9); 
+    fill: rgba(105,173,201,0.9);
 }
 
 .topic_cloud ~ text.topic_name {
@@ -739,4 +739,8 @@ th#doc_view_weight {
 
 #about_view .topic_label {
     font-style: italic;
+}
+
+circle {
+  cursor: pointer;
 }
